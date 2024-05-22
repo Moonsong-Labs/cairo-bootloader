@@ -1,0 +1,52 @@
+name: check
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  rustfmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup show
+      - run: rustup component add rustfmt
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --all -- --check
+
+  clippy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup show
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo clippy --all -- -D warnings
+
+  #  tests:
+  #    runs-on: ubuntu-latest
+  #    steps:
+  #      - uses: actions/checkout@v4
+  #        with:
+  #          submodules: "true"
+  #      - run: rustup show
+  #      - uses: Swatinem/rust-cache@v2
+  #      - uses: actions/setup-python@v4
+  #        with:
+  #          python-version: '3.11'
+  #      - run: |
+  #          pip install cairo-lang==0.13.1
+  #          bash ./scripts/reset-tests.sh
+  #          RUSTFLAGS="-D warnings" cargo test
+
+  udeps:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup show
+      - uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+      - run: cargo install cargo-udeps --locked
+      - run: cargo udeps --all-targets
