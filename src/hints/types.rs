@@ -38,7 +38,6 @@ pub enum PackedOutput {
 
 #[derive(Debug, Clone, PartialEq)]
 #[allow(clippy::large_enum_variant)]
-#[allow(dead_code)] // for now until we integrate an example
 pub enum Task {
     Program(Program),
     Pie(CairoPie),
