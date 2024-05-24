@@ -24,20 +24,23 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo clippy --all -- -D warnings
 
-  #  tests:
-  #    runs-on: ubuntu-latest
-  #    steps:
-  #      - uses: actions/checkout@v4
-  #        with:
-  #          submodules: "true"
-  #      - run: rustup show
-  #      - uses: Swatinem/rust-cache@v2
-  #      - uses: actions/setup-python@v4
-  #        with:
-  #          python-version: '3.11'
-  #      - run: |
-  #          bash ./scripts/reset-tests.sh
-  #          RUSTFLAGS="-D warnings" cargo test
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: "true"
+      - run: rustup show
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      #      - name: "Unit tests"
+      #        run: |
+      #          RUSTFLAGS="-D warnings" cargo test
+      - name: "Test examples"
+        run: |
+          RUSTFLAGS="-D warnings" cargo run --example run_program
 
   udeps:
     runs-on: ubuntu-latest
