@@ -41,6 +41,7 @@ use crate::hints::simple_bootloader_hints::{
 ///
 /// However, this processor is not sufficient to execute the bootloader. For this,
 /// use `StandaloneBootloaderHintProcessor`.
+#[derive(Default)]
 pub struct MinimalBootloaderHintProcessor;
 
 impl MinimalBootloaderHintProcessor {
@@ -141,6 +142,12 @@ impl ResourceTracker for MinimalBootloaderHintProcessor {}
 pub struct BootloaderHintProcessor {
     bootloader_hint_processor: MinimalBootloaderHintProcessor,
     builtin_hint_processor: BuiltinHintProcessor,
+}
+
+impl Default for BootloaderHintProcessor {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl BootloaderHintProcessor {
