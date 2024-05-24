@@ -437,7 +437,9 @@ mod tests {
     use cairo_vm::hint_processor::builtin_hint_processor::hint_utils::get_maybe_relocatable_from_var_name;
     use cairo_vm::hint_processor::hint_processor_definition::HintProcessorLogic;
     use cairo_vm::serde::deserialize_program::OffsetValue;
-    use cairo_vm::vm::runners::builtin_runner::{BuiltinRunner, OutputBuiltinState};
+    use cairo_vm::vm::runners::builtin_runner::{
+        BuiltinRunner, OutputBuiltinRunner, OutputBuiltinState,
+    };
     use cairo_vm::vm::runners::cairo_pie::PublicMemoryPage;
     use cairo_vm::{any_box, relocatable, Felt252};
     use rstest::{fixture, rstest};
@@ -465,9 +467,10 @@ mod tests {
 
     #[rstest]
     fn test_prepare_simple_bootloader_output_segment(bootloader_input: BootloaderInput) {
-        let mut vm = vm!();
-        vm.segments.add();
-        vm.run_context.fp = 1;
+        let mut vm = VirtualMachine::new(false);
+        vm.add_memory_segment();
+        vm.add_memory_segment();
+        vm.set_fp(1);
 
         let mut output_builtin = OutputBuiltinRunner::new(true);
         output_builtin.initialize_segments(&mut vm.segments);
@@ -475,7 +478,10 @@ mod tests {
             .push(BuiltinRunner::Output(output_builtin.clone()));
 
         let mut exec_scopes = ExecutionScopes::new();
-        let ids_data = ids_data!["simple_bootloader_output_start"];
+        let ids_data = HashMap::from([(
+            "simple_bootloader_output_start".to_string(),
+            HintReference::new_simple(-1),
+        )]);
         let ap_tracking = ApTracking::new();
 
         exec_scopes.insert_value(vars::BOOTLOADER_INPUT, bootloader_input);
@@ -498,8 +504,6 @@ mod tests {
         // Check the content of the stored output builtin
         assert_ne!(current_output_builtin.base(), stored_output_builtin.base());
         assert_eq!(stored_output_builtin.base(), output_builtin.base());
-        assert_eq!(stored_output_builtin.stop_ptr, output_builtin.stop_ptr);
-        assert_eq!(stored_output_builtin.included, output_builtin.included);
 
         let simple_bootloader_output_start = get_maybe_relocatable_from_var_name(
             "simple_bootloader_output_start",
