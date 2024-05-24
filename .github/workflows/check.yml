@@ -48,4 +48,4 @@ jobs:
         with:
           cache-on-failure: true
       - run: cargo install cargo-udeps --locked
-      - run: cargo udeps --all-targets
+      - run: cargo +nightly udeps --all-targets
