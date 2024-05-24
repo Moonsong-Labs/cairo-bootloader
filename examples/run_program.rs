@@ -97,6 +97,7 @@ fn cairo_run_bootloader_in_proof_mode(
         allow_missing_builtins: None,
     };
 
+    // Build the bootloader input
     let n_tasks = tasks.len();
     let bootloader_input = BootloaderInput {
         simple_bootloader_input: SimpleBootloaderInput {
@@ -116,6 +117,7 @@ fn cairo_run_bootloader_in_proof_mode(
     let mut exec_scopes = ExecutionScopes::new();
     insert_bootloader_input(&mut exec_scopes, bootloader_input);
 
+    // Run the bootloader
     cairo_run_program(
         &bootloader_program,
         &cairo_run_config,
