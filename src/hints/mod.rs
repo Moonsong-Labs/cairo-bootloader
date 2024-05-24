@@ -13,4 +13,8 @@ mod types;
 mod vars;
 
 pub use hint_processor::BootloaderHintProcessor;
-pub use types::{SimpleBootloaderInput, Task, TaskSpec};
+pub use types::{
+    BootloaderConfig, BootloaderInput, PackedOutput, SimpleBootloaderInput, Task, TaskSpec,
+};
+
+pub use vars::BOOTLOADER_INPUT;

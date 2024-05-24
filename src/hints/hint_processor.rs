@@ -6,6 +6,7 @@ use cairo_vm::hint_processor::builtin_hint_processor::memcpy_hint_utils::exit_sc
 use cairo_vm::hint_processor::hint_processor_definition::HintProcessorLogic;
 use cairo_vm::types::exec_scope::ExecutionScopes;
 use cairo_vm::vm::errors::hint_errors::HintError;
+use cairo_vm::vm::runners::cairo_runner::ResourceTracker;
 use cairo_vm::vm::vm_core::VirtualMachine;
 use cairo_vm::Felt252;
 
@@ -30,6 +31,12 @@ use crate::hints::simple_bootloader_hints::{
 };
 
 pub struct BootloaderHintProcessor;
+
+impl BootloaderHintProcessor {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
 
 impl HintProcessorLogic for BootloaderHintProcessor {
     fn execute_hint(
@@ -113,3 +120,5 @@ impl HintProcessorLogic for BootloaderHintProcessor {
         }
     }
 }
+
+impl ResourceTracker for BootloaderHintProcessor {}

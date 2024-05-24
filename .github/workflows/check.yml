@@ -36,7 +36,6 @@ jobs:
   #        with:
   #          python-version: '3.11'
   #      - run: |
-  #          pip install cairo-lang==0.13.1
   #          bash ./scripts/reset-tests.sh
   #          RUSTFLAGS="-D warnings" cargo test
 
