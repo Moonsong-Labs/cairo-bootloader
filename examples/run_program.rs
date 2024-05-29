@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use cairo_vm::cairo_run::{cairo_run_program, CairoRunConfig};
+use cairo_vm::cairo_run::{cairo_run_program_with_initial_scope, CairoRunConfig};
 use cairo_vm::types::exec_scope::ExecutionScopes;
 use cairo_vm::types::layout_name::LayoutName;
 use cairo_vm::types::program::Program;
@@ -53,11 +53,11 @@ fn cairo_run_bootloader_in_proof_mode(
     insert_bootloader_input(&mut exec_scopes, bootloader_input);
 
     // Run the bootloader
-    cairo_run_program(
+    cairo_run_program_with_initial_scope(
         &bootloader_program,
         &cairo_run_config,
         &mut hint_processor,
-        Some(exec_scopes),
+        exec_scopes,
     )
 }
 
