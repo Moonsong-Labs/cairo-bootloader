@@ -433,7 +433,11 @@ pub fn assert_program_address(
 mod tests {
     use num_traits::ToPrimitive;
 
+    use crate::hints::codes::{
+        BOOTLOADER_GUESS_PRE_IMAGE_OF_SUBTASKS_OUTPUT_HASH, BOOTLOADER_SAVE_OUTPUT_POINTER, BOOTLOADER_SAVE_PACKED_OUTPUTS, BOOTLOADER_SET_PACKED_OUTPUT_TO_SUBTASKS, EXECUTE_TASK_ASSERT_PROGRAM_ADDRESS
+    };
     use crate::hints::types::{BootloaderConfig, SimpleBootloaderInput};
+    use crate::{add_segments, define_segments, ids_data, run_hint, segments, vm, MinimalBootloaderHintProcessor};
     use assert_matches::assert_matches;
     use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::{
         BuiltinHintProcessor, HintProcessorData,
@@ -498,7 +502,7 @@ mod tests {
         .expect("Hint failed unexpectedly");
 
         let current_output_builtin = vm
-            .get_output_builtin()
+            .get_output_builtin_mut()
             .expect("The VM should have an output builtin")
             .clone();
         let stored_output_builtin: OutputBuiltinState = exec_scopes
@@ -506,8 +510,8 @@ mod tests {
             .expect("The output builtin is not stored in the execution scope as expected");
 
         // Check the content of the stored output builtin
-        assert_ne!(current_output_builtin.base(), stored_output_builtin.base());
-        assert_eq!(stored_output_builtin.base(), output_builtin.base());
+        assert_ne!(current_output_builtin.base(), stored_output_builtin.base);
+        assert_eq!(stored_output_builtin.base, output_builtin.base());
 
         let simple_bootloader_output_start = get_maybe_relocatable_from_var_name(
             "simple_bootloader_output_start",
@@ -561,12 +565,12 @@ mod tests {
         let mut vm: VirtualMachine = vm!();
         // The VM must have an existing output segment
         let output_segment = vm.add_memory_segment();
-        vm.builtin_runners = vec![OutputBuiltinRunner::from_segment(&output_segment, true).into()];
+        vm.builtin_runners = vec![OutputBuiltinRunner::new(true).into()];
 
         let mut exec_scopes = ExecutionScopes::new();
         let new_segment = vm.add_memory_segment();
         let output_builtin_state = OutputBuiltinState {
-            base: new_segment.segment_index,
+            base: new_segment.segment_index.try_into().unwrap(),
             pages: Default::default(),
             attributes: Default::default(),
         };
@@ -577,7 +581,7 @@ mod tests {
         assert_eq!(vm.builtin_runners.len(), 1);
         match &vm.builtin_runners[0] {
             BuiltinRunner::Output(output_builtin) => {
-                assert_eq!(output_builtin.base(), output_builtin_state.base());
+                assert_eq!(output_builtin.base(), output_builtin_state.base);
             }
             other => panic!("Expected an output builtin, found {:?}", other),
         }
@@ -589,7 +593,7 @@ mod tests {
 
         let mut vm = vm!();
         add_segments!(vm, 2);
-        vm.run_context.fp = 2;
+        vm.set_fp(2);
 
         let mut exec_scopes = ExecutionScopes::new();
         let ids_data = ids_data!["bootloader_config"];
@@ -602,10 +606,7 @@ mod tests {
 
         let bootloader_config_segment =
             get_ptr_from_var_name("bootloader_config", &mut vm, &ids_data, &ap_tracking).unwrap();
-
         let config_segment = vm
-            .segments
-            .memory
             .get_continuous_range(bootloader_config_segment, 3)
             .unwrap();
 
@@ -626,8 +627,6 @@ mod tests {
         match programs_segment {
             MaybeRelocatable::RelocatableValue(relocatable) => {
                 let program_hashes: Vec<Felt252> = vm
-                    .segments
-                    .memory
                     .get_integer_range(relocatable.clone(), expected_nb_programs)
                     .unwrap()
                     .iter()
@@ -647,6 +646,7 @@ mod tests {
 
     #[rstest]
     fn test_gen_arg() {
+        use std::ops::Add;
         let mut vm = vm!();
 
         let mut nested_args = Vec::<Box<dyn Any>>::new();
@@ -661,8 +661,6 @@ mod tests {
         let args_base: Relocatable = gen_arg(&mut vm, &args).expect("gen_args failed unexpectedly");
 
         let values = vm
-            .segments
-            .memory
             .get_integer_range(args_base, 2)
             .expect("Loading values failed");
 
@@ -671,14 +669,10 @@ mod tests {
 
         let nested_args_address: Relocatable = args_base.add(2i32).unwrap();
         let nested_args_base = vm
-            .segments
-            .memory
             .get_relocatable(nested_args_address)
             .expect("Nested vector should be here");
 
         let nested_values = vm
-            .segments
-            .memory
             .get_integer_range(nested_args_base, 2)
             .expect("Loading nested values failed");
 
@@ -690,8 +684,8 @@ mod tests {
     fn test_enter_packed_output_scope() {
         let mut vm = vm!();
         // Set n_subtasks to 2
-        vm.run_context.fp = 1;
-        vm.segments = segments![((1, 0), 2)];
+        vm.set_fp(1);
+        define_segments!(vm, 2, [((1, 0), 2)]);
         let ids_data = ids_data!["n_subtasks"];
 
         let ap_tracking = ApTracking::default();
@@ -733,11 +727,7 @@ mod tests {
         ) -> bool {
             exec_scopes.insert_value(vars::PACKED_OUTPUT, packed_output);
             is_plain_packed_output(vm, exec_scopes).expect("Hint failed unexpectedly");
-            let result = vm
-                .segments
-                .memory
-                .get_integer(vm.run_context.get_ap())
-                .unwrap();
+            let result = vm.get_integer(vm.get_ap()).unwrap();
 
             result.into_owned() != Felt252::from(0)
         }
@@ -748,7 +738,8 @@ mod tests {
         assert!(is_plain(&mut vm, &mut exec_scopes, plain_packed_output));
 
         // Increment AP to avoid an inconsistent memory error writing in the same slot
-        vm.run_context.ap += 1;
+        let new_ap = (*&vm.get_ap() + 1usize).unwrap();
+        vm.set_ap(new_ap.offset);
         assert!(!is_plain(
             &mut vm,
             &mut exec_scopes,
@@ -759,18 +750,16 @@ mod tests {
     #[test]
     fn test_save_output_pointer() {
         let mut vm = vm!();
-        vm.segments = segments![((1, 0), (0, 0))];
+        define_segments!(vm, 2, [((1, 0), (0, 0))]);
         let mut hint_ref = HintReference::new(0, 0, true, false);
         hint_ref.offset2 = OffsetValue::Value(2);
         let ids_data = HashMap::from([("output_ptr".to_string(), hint_ref)]);
 
         let mut exec_scopes = ExecutionScopes::new();
 
-        let hint_data = HintProcessorData::new_default(
-            String::from(hint_code::BOOTLOADER_SAVE_OUTPUT_POINTER),
-            ids_data,
-        );
-        let mut hint_processor = BuiltinHintProcessor::new_empty();
+        let hint_data =
+            HintProcessorData::new_default(String::from(BOOTLOADER_SAVE_OUTPUT_POINTER), ids_data);
+        let mut hint_processor = MinimalBootloaderHintProcessor::new();
         assert_matches!(
             hint_processor.execute_hint(
                 &mut vm,
@@ -815,10 +804,10 @@ mod tests {
         exec_scopes.insert_box("bootloader_input", Box::new(bootloader_input.clone()));
 
         let hint_data = HintProcessorData::new_default(
-            String::from(hint_code::BOOTLOADER_SAVE_PACKED_OUTPUTS),
+            String::from(BOOTLOADER_SAVE_PACKED_OUTPUTS),
             HashMap::new(),
         );
-        let mut hint_processor = BuiltinHintProcessor::new_empty();
+        let mut hint_processor = MinimalBootloaderHintProcessor::new();
         assert_matches!(
             hint_processor.execute_hint(
                 &mut vm,
@@ -881,8 +870,13 @@ mod tests {
                 offset: 18
             }
         );
+        let pages = match vm.get_output_builtin_mut().unwrap().get_additional_data() {
+            cairo_vm::vm::runners::cairo_pie::BuiltinAdditionalData::Output(o) => o.pages,
+            _ => unreachable!("Type should be Output"),
+        };
+
         assert_eq!(
-            vm.get_output_builtin().unwrap().pages,
+            pages,
             HashMap::from([
                 (1, PublicMemoryPage { start: 2, size: 3 }),
                 (2, PublicMemoryPage { start: 5, size: 1 }),
@@ -909,10 +903,10 @@ mod tests {
         );
 
         let hint_data = HintProcessorData::new_default(
-            String::from(hint_code::BOOTLOADER_SET_PACKED_OUTPUT_TO_SUBTASKS),
+            String::from(BOOTLOADER_SET_PACKED_OUTPUT_TO_SUBTASKS),
             HashMap::new(),
         );
-        let mut hint_processor = BuiltinHintProcessor::new_empty();
+        let mut hint_processor = MinimalBootloaderHintProcessor::new();
         assert_matches!(
             hint_processor.execute_hint(
                 &mut vm,
@@ -931,7 +925,7 @@ mod tests {
     fn test_guess_pre_image_of_subtasks_output_hash() {
         let mut vm = vm!();
         add_segments!(vm, 2);
-        vm.run_context.fp = 2;
+        vm.set_fp(2);
 
         let ids_data = ids_data!["nested_subtasks_output_len", "nested_subtasks_output"];
 
@@ -951,7 +945,7 @@ mod tests {
             run_hint!(
                 vm,
                 ids_data.clone(),
-                hint_code::BOOTLOADER_GUESS_PRE_IMAGE_OF_SUBTASKS_OUTPUT_HASH,
+                BOOTLOADER_GUESS_PRE_IMAGE_OF_SUBTASKS_OUTPUT_HASH,
                 &mut exec_scopes
             ),
             Ok(())
@@ -959,7 +953,7 @@ mod tests {
         let nested_subtasks_output_len =
             get_integer_from_var_name("nested_subtasks_output_len", &vm, &ids_data, &ap_tracking)
                 .expect("nested_subtasks_output_len should be set")
-                .into_owned();
+                .to_owned();
         assert_eq!(nested_subtasks_output_len, 1.into());
 
         let nested_subtasks_output =
@@ -992,7 +986,7 @@ mod tests {
         let mut vm = vm!();
 
         add_segments!(vm, 2);
-        vm.run_context.fp = 2;
+        vm.set_fp(2);
 
         let ids_data = ids_data!(vars::PROGRAM_ADDRESS);
         let ap_tracking = ApTracking::new();
@@ -1023,7 +1017,7 @@ mod tests {
         let result = run_hint!(
             vm,
             ids_data.clone(),
-            hint_code::EXECUTE_TASK_ASSERT_PROGRAM_ADDRESS,
+            EXECUTE_TASK_ASSERT_PROGRAM_ADDRESS,
             &mut exec_scopes
         );
 

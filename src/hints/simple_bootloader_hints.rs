@@ -131,15 +131,12 @@ pub fn set_current_task(
 
 #[cfg(test)]
 mod tests {
-    use std::any::Any;
-    use std::collections::HashMap;
     use std::collections::HashMap;
 
     use cairo_vm::hint_processor::builtin_hint_processor::hint_utils::{
         get_ptr_from_var_name, get_relocatable_from_var_name, insert_value_from_var_name,
     };
-    use cairo_vm::hint_processor::hint_processor_definition::HintReference;
-    use cairo_vm::serde::deserialize_program::{ApTracking, BuiltinName, Identifier};
+    use cairo_vm::serde::deserialize_program::ApTracking;
     use cairo_vm::types::exec_scope::ExecutionScopes;
     use cairo_vm::types::program::Program;
     use cairo_vm::types::relocatable::{MaybeRelocatable, Relocatable};
@@ -153,7 +150,6 @@ mod tests {
     use cairo_vm::vm::vm_memory::memory::Memory;
     use cairo_vm::{any_box, Felt252};
     use num_traits::ToPrimitive;
-    use num_traits::ToPrimitive;
     use rstest::{fixture, rstest};
     use starknet_crypto::FieldElement;
 
@@ -163,13 +159,14 @@ mod tests {
     use crate::hints::program_loader::ProgramLoader;
     use crate::hints::types::{BootloaderVersion, Task, TaskSpec};
     use crate::hints::vars;
+    use crate::{add_segments, define_segments, ids_data, vm};
 
     use super::*;
 
     #[fixture]
     fn fibonacci() -> Program {
         let program_content =
-            include_bytes!("../../../../../cairo_programs/fibonacci.json").to_vec();
+            include_bytes!("../cairo-programs/fibonacci.json").to_vec();
 
         Program::from_bytes(&program_content, Some("main"))
             .expect("Loading example program failed unexpectedly")
@@ -194,8 +191,8 @@ mod tests {
     #[rstest]
     fn test_prepare_task_range_checks(simple_bootloader_input: SimpleBootloaderInput) {
         let mut vm = vm!();
-        vm.run_context.fp = 3;
-        vm.segments = segments![((1, 0), (2, 0)), ((1, 1), (2, 2))];
+        vm.set_fp(3);
+        define_segments!(vm, 2, [((1, 0), (2, 0)), ((1, 1), (2, 2))]);
         let ids_data = ids_data!["output_ptr", "range_check_ptr", "task_range_check_ptr"];
         vm.add_memory_segment();
 
@@ -216,8 +213,6 @@ mod tests {
 
         // Assert *output_ptr == n_tasks
         let output = vm
-            .segments
-            .memory
             .get_integer(Relocatable {
                 segment_index: 2,
                 offset: 0,
@@ -266,8 +261,8 @@ mod tests {
 
         let mut vm = vm!();
         add_segments!(vm, 2);
-        vm.run_context.ap = 1;
-        vm.run_context.fp = 1;
+        vm.set_ap(1);
+        vm.set_fp(1);
 
         let ids_data = ids_data!["num"];
         let ap_tracking = ApTracking::new();
@@ -276,11 +271,7 @@ mod tests {
 
         divide_num_by_2(&mut vm, &ids_data, &ap_tracking).expect("Hint failed unexpectedly");
 
-        let divided_num = vm
-            .segments
-            .memory
-            .get_integer(vm.run_context.get_ap())
-            .unwrap();
+        let divided_num = vm.get_integer(vm.get_ap()).unwrap();
         assert_eq!(divided_num.into_owned(), expected_num_felt);
     }
 
@@ -291,12 +282,7 @@ mod tests {
 
         set_ap_to_zero(&mut vm).expect("Hint failed unexpectedly");
 
-        let ap_value = vm
-            .segments
-            .memory
-            .get_integer(vm.run_context.get_ap())
-            .unwrap()
-            .into_owned();
+        let ap_value = vm.get_integer(vm.get_ap()).unwrap().into_owned();
 
         assert_eq!(ap_value, Felt252::from(0));
     }
@@ -305,8 +291,8 @@ mod tests {
     fn test_set_current_task(simple_bootloader_input: SimpleBootloaderInput) {
         // Set n_tasks to 1
         let mut vm = vm!();
-        vm.run_context.fp = 2;
-        vm.segments = segments![((1, 0), 1)];
+        vm.set_fp(2);
+        define_segments!(vm, 2, [((1, 0), 1)]);
 
         let mut exec_scopes = ExecutionScopes::new();
         exec_scopes.insert_value(vars::SIMPLE_BOOTLOADER_INPUT, simple_bootloader_input);

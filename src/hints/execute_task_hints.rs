@@ -493,14 +493,19 @@ mod tests {
     };
     use cairo_vm::hint_processor::builtin_hint_processor::hint_utils::get_maybe_relocatable_from_var_name;
     use cairo_vm::hint_processor::hint_processor_definition::HintProcessorLogic;
-    use cairo_vm::serde::deserialize_program::OffsetValue;
+    use cairo_vm::serde::deserialize_program::{OffsetValue, ReferenceManager};
+    use cairo_vm::types::errors::math_errors::MathError;
+    use cairo_vm::types::program::Program;
+    use cairo_vm::types::relocatable::MaybeRelocatable;
     use cairo_vm::vm::runners::builtin_runner::BuiltinRunner;
-    use cairo_vm::vm::runners::cairo_pie::PublicMemoryPage;
+    use cairo_vm::vm::runners::cairo_pie::{BuiltinAdditionalData, OutputBuiltinAdditionalData, PublicMemoryPage};
     use cairo_vm::{any_box, relocatable, Felt252};
     use num_traits::ToPrimitive;
     use rstest::{fixture, rstest};
 
+    use crate::hints::codes::EXECUTE_TASK_CALL_TASK;
     use crate::hints::types::{BootloaderConfig, SimpleBootloaderInput};
+    use crate::{add_segments, define_segments, ids_data, non_continuous_ids_data, run_hint, segments, vm};
 
     use super::*;
 
@@ -508,7 +513,7 @@ mod tests {
     fn test_allocate_program_data_segment() {
         let mut vm = vm!();
         // Allocate space for program_data_ptr
-        vm.run_context.fp = 1;
+        vm.set_fp(1);
         add_segments!(vm, 2);
         let ids_data = ids_data!["program_data_ptr"];
         let expected_program_data_segment_index = vm.segments.num_segments();
@@ -545,7 +550,7 @@ mod tests {
     #[fixture]
     fn fibonacci() -> Program {
         let program_content =
-            include_bytes!("../../../../../cairo_programs/fibonacci.json").to_vec();
+            include_bytes!("../cairo-programs/fibonacci.json").to_vec();
 
         Program::from_bytes(&program_content, Some("main"))
             .expect("Loading example program failed unexpectedly")
@@ -554,14 +559,14 @@ mod tests {
     #[fixture]
     fn fibonacci_pie() -> CairoPie {
         let pie_file =
-            Path::new("../cairo_programs/manually_compiled/fibonacci_cairo_pie/fibonacci_pie.zip");
-        CairoPie::from_file(pie_file).expect("Failed to load the program PIE")
+            Path::new("../cairo-programs/pie.zip");
+        CairoPie::read_zip_file(pie_file).expect("Failed to load the program PIE")
     }
 
     #[fixture]
     fn field_arithmetic_program() -> Program {
         let program_content =
-            include_bytes!("../../../../../cairo_programs/field_arithmetic.json").to_vec();
+            include_bytes!("../cairo-programs/fibonacci.json").to_vec();
 
         Program::from_bytes(&program_content, Some("main"))
             .expect("Loading example program failed unexpectedly")
@@ -572,9 +577,9 @@ mod tests {
         let task = Task::Program(fibonacci.clone());
 
         let mut vm = vm!();
-        vm.run_context.fp = 1;
+        vm.set_fp(1);
         // Set program_header_ptr to (2, 0)
-        vm.segments = segments![((1, 0), (2, 0))];
+        define_segments!(vm, 2, [((1, 0), (2, 0))]);
         let program_header_ptr = Relocatable::from((2, 0));
         add_segments!(vm, 1);
 
@@ -593,13 +598,14 @@ mod tests {
 
         // The Fibonacci program has no builtins -> the header size is 4
         let header_size = 4;
-        let expected_code_address = &program_header_ptr + header_size;
+        let code_address: Result<Relocatable, MathError> = *&program_header_ptr + header_size;
+        let expected_code_address: Relocatable = code_address.unwrap();
 
         let program_address: Relocatable = exec_scopes.get(vars::PROGRAM_ADDRESS).unwrap();
         assert_eq!(program_address, expected_code_address);
 
         // Check that the segment was finalized
-        let expected_program_size = header_size + fibonacci.shared_program_data.data.len();
+        let expected_program_size = header_size + fibonacci.data_len();
         assert_eq!(
             vm.segments.segment_sizes[&(program_address.segment_index as usize)],
             expected_program_size
@@ -612,8 +618,8 @@ mod tests {
 
         // Allocate space for pre-execution (8 felts), which mimics the `BuiltinData` struct in the
         // Bootloader's Cairo code. Our code only uses the first felt (`output` field in the struct)
-        vm.segments = segments![((1, 0), (2, 0))];
-        vm.run_context.fp = 8;
+        define_segments!(vm, 2, [((1, 0), (2, 0))]);
+        vm.set_fp(8);
         add_segments!(vm, 1);
 
         let ids_data = non_continuous_ids_data![(vars::PRE_EXECUTION_BUILTIN_PTRS, -8)];
@@ -632,7 +638,7 @@ mod tests {
             run_hint!(
                 vm,
                 ids_data.clone(),
-                hint_code::EXECUTE_TASK_CALL_TASK,
+                EXECUTE_TASK_CALL_TASK,
                 &mut exec_scopes
             ),
             Ok(())
@@ -662,15 +668,16 @@ mod tests {
             })
             .collect();
 
-        let shared_program_data = SharedProgramData {
+        let program = Program::new(
+            vec![],
+            Default::default(),
+            Default::default(),
+            Default::default(),
+            ReferenceManager::default(),
             identifiers,
-            ..Default::default()
-        };
-        let program = Program {
-            shared_program_data: Arc::new(shared_program_data),
-            constants: Default::default(),
-            builtins: vec![],
-        };
+            Default::default(),
+            Default::default(),
+        ).unwrap();
 
         program
     }
@@ -684,9 +691,9 @@ mod tests {
         // the Bootloader Cairo code. Our code only uses the first felt (`output` field in the
         // struct). Finally, we put the mocked output of `select_input_builtins` in the next
         // memory address and increase the AP register accordingly.
-        vm.segments = segments![((1, 0), (2, 0)), ((1, 1), (4, 0)), ((1, 9), (4, 42))];
-        vm.run_context.ap = 10;
-        vm.run_context.fp = 9;
+        define_segments!(vm, 3, [((1, 0), (2, 0)), ((1, 1), (4, 0)), ((1, 9), (4, 42))]);
+        vm.set_ap(10);
+        vm.set_fp(9);
         add_segments!(vm, 3);
 
         let program_header_ptr = Relocatable::from((2, 0));
@@ -734,18 +741,18 @@ mod tests {
         // The pre-execution struct starts at (1, 0) and the return struct at (1, 8).
         // We only set the output values to (2, 0) and (2, 10), respectively, to get an output size
         // of 10.
-        vm.segments = segments![((1, 0), (2, 0)), ((1, 8), (2, 10)),];
-        vm.run_context.fp = 16;
+        define_segments!(vm, 2, [((1, 0), (2, 0)), ((1, 8), (2, 10)),]);
+        vm.set_fp(16);
         add_segments!(vm, 1);
 
         let tree_structure = vec![1, 2, 3, 4];
-        let program_output_data = OutputBuiltinAdditionalData {
-            base: 0,
+        let program_output_data = OutputBuiltinState {
             pages: HashMap::from([
                 (1, PublicMemoryPage { start: 0, size: 7 }),
                 (2, PublicMemoryPage { start: 7, size: 3 }),
             ]),
             attributes: HashMap::from([("gps_fact_topology".to_string(), tree_structure.clone())]),
+            base: 0
         };
         let mut output_builtin = OutputBuiltinRunner::new(true);
         output_builtin.set_state(program_output_data.clone());
@@ -763,7 +770,6 @@ mod tests {
         let mut exec_scopes = ExecutionScopes::new();
 
         let output_runner_data = OutputBuiltinAdditionalData {
-            base: 0,
             pages: HashMap::new(),
             attributes: HashMap::new(),
         };
@@ -783,7 +789,8 @@ mod tests {
         assert_eq!(fact_topology.tree_structure, tree_structure);
 
         // Check that the output builtin was updated
-        let output_builtin_additional_data = vm.get_output_builtin().unwrap().get_additional_data();
+        let output_builtin_additional_data =
+            vm.get_output_builtin_mut().unwrap().get_additional_data();
         assert!(matches!(
             output_builtin_additional_data,
             BuiltinAdditionalData::Output(data) if data == output_runner_data,
@@ -802,7 +809,7 @@ mod tests {
         // Initialize the used builtins to {range_check: 30, bitwise: 50} as these two
         // are used by the field arithmetic program. Note that the used builtins list
         // does not contain empty elements (i.e. offsets are 8 and 9 instead of 10 and 12).
-        vm.segments = segments![
+        define_segments!(vm, 2, [
             ((1, 0), (2, 1)),
             ((1, 1), (2, 2)),
             ((1, 2), (2, 3)),
@@ -814,8 +821,8 @@ mod tests {
             ((1, 8), (2, 30)),
             ((1, 9), (2, 50)),
             ((1, 24), (1, 8)),
-        ];
-        vm.run_context.fp = 25;
+        ]);
+        vm.set_fp(25);
         add_segments!(vm, 1);
 
         // Note that used_builtins_addr is a pointer to the used builtins list at (1, 8)
@@ -827,7 +834,7 @@ mod tests {
         let ap_tracking = ApTracking::new();
 
         let mut exec_scopes = ExecutionScopes::new();
-        let n_builtins = field_arithmetic_program.builtins.len();
+        let n_builtins = field_arithmetic_program.builtins_len();
         exec_scopes.insert_value(vars::N_BUILTINS, n_builtins);
         exec_scopes.insert_value(vars::TASK, task);
 
@@ -836,8 +843,6 @@ mod tests {
 
         // Check that the return builtins were written correctly
         let return_builtins = vm
-            .segments
-            .memory
             .get_continuous_range(Relocatable::from((1, 16)), 8)
             .expect("Return builtin was not properly written to memory.");
 

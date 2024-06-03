@@ -242,7 +242,7 @@ mod tests {
     #[fixture]
     fn fibonacci() -> Program {
         let program_content =
-            include_bytes!("../../../../../cairo_programs/fibonacci.json").to_vec();
+            include_bytes!("../cairo-programs/fibonacci.json").to_vec();
 
         Program::from_bytes(&program_content, Some("main"))
             .expect("Loading example program failed unexpectedly")
@@ -295,7 +295,7 @@ mod tests {
 
         check_loaded_header(&vm, base_address.clone(), &program, bootloader_version);
 
-        let builtin_list_ptr = (base_address + builtins_offset)?;
+        let builtin_list_ptr = (base_address + builtins_offset).unwrap();
         check_loaded_builtins(&vm, &vec![], builtin_list_ptr);
     }
 

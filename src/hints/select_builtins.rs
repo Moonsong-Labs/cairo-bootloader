@@ -39,17 +39,13 @@ pub fn select_builtins_enter_scope(
 
 #[cfg(test)]
 mod tests {
-    use std::any::Any;
-    use std::collections::HashMap;
 
-    use cairo_vm::hint_processor::builtin_hint_processor::hint_utils::get_integer_from_var_name;
-    use cairo_vm::hint_processor::hint_processor_definition::HintReference;
     use cairo_vm::serde::deserialize_program::ApTracking;
     use cairo_vm::types::exec_scope::ExecutionScopes;
-    use cairo_vm::vm::errors::hint_errors::HintError;
     use cairo_vm::vm::vm_core::VirtualMachine;
-    use num_traits::ToPrimitive;
-    use serde::Serialize;
+    use std::collections::HashMap;
+
+    use crate::{define_segments, ids_data, segments, vm};
 
     use super::*;
 
@@ -57,8 +53,8 @@ mod tests {
     fn test_select_builtins_enter_scope() {
         let mut vm = vm!();
         // Set n_selected_builtins to 7
-        vm.run_context.fp = 1;
-        vm.segments = segments![((1, 0), 7)];
+        vm.set_fp(1);
+        define_segments!(vm, 2, [((1, 0), 7)]);
         let ids_data = ids_data![vars::N_SELECTED_BUILTINS];
         let n_selected_builtins = 7usize;
 
