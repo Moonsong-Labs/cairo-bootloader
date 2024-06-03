@@ -40,7 +40,7 @@ use crate::hints::simple_bootloader_hints::{
 /// to enable this modularity.
 ///
 /// However, this processor is not sufficient to execute the bootloader. For this,
-/// use `StandaloneBootloaderHintProcessor`.
+/// use `BootloaderHintProcessor`.
 #[derive(Default)]
 pub struct MinimalBootloaderHintProcessor;
 
