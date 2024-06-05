@@ -22,6 +22,7 @@ use crate::hints::types::{BootloaderInput, CompositePackedOutput, PackedOutput};
 use crate::hints::vars;
 
 /// Implements
+/// ```no-run
 /// %{
 ///     from starkware.cairo.bootloaders.bootloader.objects import BootloaderInput
 ///     bootloader_input = BootloaderInput.Schema().load(program_input)
@@ -33,6 +34,7 @@ use crate::hints::vars;
 ///     output_builtin_state = output_builtin.get_state()
 ///     output_builtin.new_state(base=ids.simple_bootloader_output_start)
 /// %}
+/// ```
 pub fn prepare_simple_bootloader_output_segment(
     vm: &mut VirtualMachine,
     exec_scopes: &mut ExecutionScopes,

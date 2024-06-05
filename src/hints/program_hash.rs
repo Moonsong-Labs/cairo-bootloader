@@ -84,10 +84,10 @@ fn maybe_relocatable_to_field_element(
     felt_to_field_element(felt)
 }
 
-#[allow(dead_code)] // TODO: remove
 /// Computes the Pedersen hash of a program.
 ///
 /// Reimplements this Python function:
+/// ```no-run
 /// def compute_program_hash_chain(program: ProgramBase, bootloader_version=0):
 ///     builtin_list = [from_bytes(builtin.encode("ascii")) for builtin in program.builtins]
 ///     # The program header below is missing the data length, which is later added to the data_chain.
@@ -95,6 +95,7 @@ fn maybe_relocatable_to_field_element(
 ///     data_chain = program_header + program.data
 ///  
 ///     return compute_hash_chain([len(data_chain)] + data_chain)
+/// ```
 pub fn compute_program_hash_chain(
     program: &StrippedProgram,
     bootloader_version: usize,
@@ -168,15 +169,15 @@ mod tests {
     #[rstest]
     // Expected hashes generated with `cairo-hash-program`
     #[case::fibonacci(
-        "./test-programs/cairo0/fibonacci/fibonacci.json",
+        "./dependencies/test-programs/cairo0/fibonacci/fibonacci.json",
         "0x6fc56a47599a5cc20bb3c6d4c5397f872bb6269f036e383f4c13986d4020952"
     )]
     #[case::field_arithmetic(
-        "./test-programs/cairo0/field-arithmetic/field_arithmetic.json",
+        "./dependencies/test-programs/cairo0/field-arithmetic/field_arithmetic.json",
         "0xdc5a7432daec36bb707aa9f8cbcd60a2c5a4f5b16dbe7a4b6d96d5bfdd2a43"
     )]
     #[case::keccak_copy_inputs(
-        "./test-programs/cairo0/keccak-copy-inputs/keccak_copy_inputs.json",
+        "./dependencies/test-programs/cairo0/keccak-copy-inputs/keccak_copy_inputs.json",
         "0x79e69539b9bbcc863519fb17f864c3439277cd851146f30d1ce0232fb358632"
     )]
     fn test_compute_program_hash_chain(

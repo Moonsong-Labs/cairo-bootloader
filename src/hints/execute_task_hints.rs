@@ -314,9 +314,13 @@ pub fn write_return_builtins_hint(
     Ok(())
 }
 
-fn get_bootloader_program(exec_scopes: &ExecutionScopes) -> Result<&ProgramIdentifiers, HintError> {
-    if let Some(boxed_program) = exec_scopes.data[0].get(vars::BOOTLOADER_PROGRAM_IDENTIFIERS) {
-        if let Some(program) = boxed_program.downcast_ref::<ProgramIdentifiers>() {
+fn get_bootloader_identifiers(
+    exec_scopes: &ExecutionScopes,
+) -> Result<&ProgramIdentifiers, HintError> {
+    if let Some(bootloader_identifiers) =
+        exec_scopes.data[0].get(vars::BOOTLOADER_PROGRAM_IDENTIFIERS)
+    {
+        if let Some(program) = bootloader_identifiers.downcast_ref::<ProgramIdentifiers>() {
             return Ok(program);
         }
     }
@@ -413,7 +417,7 @@ pub fn call_task(
             let program_address: Relocatable = exec_scopes.get("program_address")?;
 
             // ret_pc = ids.ret_pc_label.instruction_offset_ - ids.call_task.instruction_offset_ + pc
-            let bootloader_identifiers = get_bootloader_program(exec_scopes)?;
+            let bootloader_identifiers = get_bootloader_identifiers(exec_scopes)?;
             let ret_pc_label = get_identifier(bootloader_identifiers, "starkware.cairo.bootloaders.simple_bootloader.execute_task.execute_task.ret_pc_label")?;
             let call_task = get_identifier(
                 bootloader_identifiers,
@@ -489,7 +493,6 @@ mod tests {
 
     use cairo_vm::any_box;
     use cairo_vm::hint_processor::hint_processor_definition::HintProcessorLogic;
-    use cairo_vm::serde::deserialize_program::ReferenceManager;
     use cairo_vm::types::errors::math_errors::MathError;
     use cairo_vm::types::program::Program;
     use cairo_vm::types::relocatable::MaybeRelocatable;
@@ -649,7 +652,7 @@ mod tests {
     /// * a `HasIdentifiers` trait cannot be used as exec_scopes requires to cast to `Box<dyn Any>`,
     ///   making casting back to the trait impossible.
     /// * using an enum requires defining test-only variants.
-    fn mock_program_with_identifiers(symbols: HashMap<String, usize>) -> Program {
+    fn mock_program_identifiers(symbols: HashMap<String, usize>) -> ProgramIdentifiers {
         let identifiers = symbols
             .into_iter()
             .map(|(name, pc)| {
@@ -667,19 +670,7 @@ mod tests {
             })
             .collect();
 
-        let program = Program::new(
-            vec![],
-            Default::default(),
-            Default::default(),
-            Default::default(),
-            ReferenceManager::default(),
-            identifiers,
-            Default::default(),
-            Default::default(),
-        )
-        .unwrap();
-
-        program
+        identifiers
     }
 
     #[rstest]
@@ -693,7 +684,7 @@ mod tests {
         // memory address and increase the AP register accordingly.
         define_segments!(
             vm,
-            3,
+            4,
             [((1, 0), (2, 0)), ((1, 1), (4, 0)), ((1, 9), (4, 42))]
         );
         vm.set_ap(10);
@@ -721,9 +712,9 @@ mod tests {
                 ("starkware.cairo.bootloaders.simple_bootloader.execute_task.execute_task.call_task".to_string(), 8usize)
             ]
         );
-        let bootloader_program = mock_program_with_identifiers(bootloader_identifiers);
+        let program_identifiers = mock_program_identifiers(bootloader_identifiers);
         exec_scopes.insert_value(vars::PROGRAM_DATA_BASE, program_header_ptr.clone());
-        exec_scopes.insert_value(vars::BOOTLOADER_PROGRAM_IDENTIFIERS, bootloader_program);
+        exec_scopes.insert_value(vars::BOOTLOADER_PROGRAM_IDENTIFIERS, program_identifiers);
 
         // Load the program in memory
         load_program_hint(&mut vm, &mut exec_scopes, &ids_data, &ap_tracking)
