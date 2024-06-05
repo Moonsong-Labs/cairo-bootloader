@@ -159,7 +159,7 @@ macro_rules! run_hint {
             &mut $vm,
             exec_scopes_ref!(),
             &any_box!(hint_data),
-            &crate::stdlib::collections::HashMap::new(),
+            &$crate::stdlib::collections::HashMap::new(),
         )
     }};
 }
