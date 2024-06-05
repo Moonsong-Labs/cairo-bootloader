@@ -11,6 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: "true"
       - run: rustup show
       - run: rustup component add rustfmt
       - uses: Swatinem/rust-cache@v2
@@ -20,6 +22,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: "true"
       - run: rustup show
       - uses: Swatinem/rust-cache@v2
       - run: cargo clippy --all -- -D warnings
@@ -40,6 +44,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: "true"
       - run: rustup toolchain install nightly --profile minimal
       - uses: Swatinem/rust-cache@v2
         with:
