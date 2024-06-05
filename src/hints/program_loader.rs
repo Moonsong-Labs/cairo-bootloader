@@ -242,7 +242,7 @@ mod tests {
     #[fixture]
     fn fibonacci() -> Program {
         let program_content =
-            include_bytes!("/home/geoff/Desktop/test-cairo/fibonacci.json").to_vec();
+            include_bytes!("../dependencies//test-cairo/fibonacci.json").to_vec();
 
         Program::from_bytes(&program_content, Some("main"))
             .expect("Loading example program failed unexpectedly")

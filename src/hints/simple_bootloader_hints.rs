@@ -168,7 +168,7 @@ mod tests {
         let program_content =
             include_bytes!("/home/geoff/Desktop/test-cairo/fibonacci.json").to_vec();
 
-        Program::from_bytes(&program_content, Some("main"))
+        Program::from_bytes(../dependencies/ome("main"))
             .expect("Loading example program failed unexpectedly")
     }
 
