@@ -292,11 +292,6 @@ mod tests {
         exec_scopes.insert_value(vars::SIMPLE_BOOTLOADER_INPUT, simple_bootloader_input);
 
         let ids_data = ids_data!["n_tasks", "task"];
-        // let ids_data = HashMap::from([
-        //     ("n_tasks".to_string(), HintReference::new_simple(-2)),
-        //     ("task".to_string(), HintReference::new_simple(-1)),
-        // ]);
-        dbg!(&ids_data);
         let ap_tracking = ApTracking::new();
         set_current_task(&mut vm, &mut exec_scopes, &ids_data, &ap_tracking)
             .expect("Hint failed unexpectedly");

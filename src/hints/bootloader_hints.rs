@@ -692,7 +692,6 @@ mod tests {
         define_segments!(vm, 2, [((1, 0), 2)]);
         // let ids_data = ids_data!["n_subtasks"];
         let ids_data = HashMap::from([("n_subtasks".to_string(), HintReference::new_simple(-1))]);
-        dbg!(&ids_data);
         let ap_tracking = ApTracking::default();
 
         let mut exec_scopes = ExecutionScopes::new();

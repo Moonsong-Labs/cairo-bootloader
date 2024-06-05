@@ -97,7 +97,6 @@ mod tests {
         vm.set_fp(3);
         add_segments!(vm, 2);
         let ids_data = ids_data!["selected_encodings", "all_encodings", "select_builtin"];
-        // dbg!(&ids_data);
         let ap_tracking = ApTracking::new();
 
         let mut exec_scopes = ExecutionScopes::new();
