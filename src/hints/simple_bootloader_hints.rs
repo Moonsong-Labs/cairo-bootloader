@@ -134,29 +134,22 @@ mod tests {
     use std::collections::HashMap;
 
     use cairo_vm::hint_processor::builtin_hint_processor::hint_utils::{
-        get_ptr_from_var_name,
-        insert_value_from_var_name,
+        get_ptr_from_var_name, insert_value_from_var_name,
     };
-    
+
     use cairo_vm::serde::deserialize_program::ApTracking;
     use cairo_vm::types::exec_scope::ExecutionScopes;
     use cairo_vm::types::program::Program;
-    use cairo_vm::types::relocatable::{Relocatable};
-    
-    
-    
-    
+    use cairo_vm::types::relocatable::Relocatable;
+
     use cairo_vm::vm::vm_core::VirtualMachine;
-    
-    use cairo_vm::{Felt252};
+
+    use cairo_vm::Felt252;
     use num_traits::ToPrimitive;
     use rstest::{fixture, rstest};
-    
 
-    use crate::hints::fact_topologies::{FactTopology};
-    
-    
-    
+    use crate::hints::fact_topologies::FactTopology;
+
     use crate::hints::types::{Task, TaskSpec};
     use crate::hints::vars;
     use crate::{add_segments, define_segments, ids_data, vm};

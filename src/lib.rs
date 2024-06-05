@@ -92,7 +92,6 @@ macro_rules! non_continuous_ids_data {
     };
 }
 
-
 #[macro_export]
 macro_rules! insert_value_inner {
     ($vm:expr, ($si:expr, $off:expr), ($sival:expr, $offval: expr)) => {
@@ -101,12 +100,10 @@ macro_rules! insert_value_inner {
             &$crate::mayberelocatable!($sival, $offval),
         );
         $vm.insert_value(k, v).unwrap();
-        
     };
     ($vm:expr, ($si:expr, $off:expr), $val:expr) => {
         let (k, v) = (($si, $off).into(), &$crate::mayberelocatable!($val));
         $vm.insert_value(k, v).unwrap();
-        
     };
 }
 
@@ -131,7 +128,6 @@ macro_rules! define_segments {
         )*
     };
 }
-
 
 #[macro_export]
 macro_rules! run_hint {
@@ -167,4 +163,3 @@ macro_rules! run_hint {
         )
     }};
 }
-
