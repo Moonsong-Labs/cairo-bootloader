@@ -484,8 +484,6 @@ mod util {
 
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
-
     use assert_matches::assert_matches;
     use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::HintProcessorData;
 
@@ -547,7 +545,8 @@ mod tests {
     #[fixture]
     fn fibonacci() -> Program {
         let program_content =
-            include_bytes!("../../test-programs/cairo0/fibonacci/fibonacci.json").to_vec();
+            include_bytes!("../../dependencies/test-programs/cairo0/fibonacci/fibonacci.json")
+                .to_vec();
 
         Program::from_bytes(&program_content, Some("main"))
             .expect("Loading example program failed unexpectedly")
@@ -555,15 +554,18 @@ mod tests {
 
     #[fixture]
     fn fibonacci_pie() -> CairoPie {
-        let pie_file = Path::new("../../test-programs/bootloader/pies/fibonacci/cairo_pie.zip");
-        CairoPie::read_zip_file(pie_file).expect("Failed to load the program PIE")
+        let pie_content = include_bytes!(
+            "../../dependencies/test-programs/bootloader/pies/fibonacci/cairo_pie.zip"
+        );
+        CairoPie::from_bytes(pie_content).expect("Failed to load the program PIE")
     }
 
     #[fixture]
     fn field_arithmetic_program() -> Program {
-        let program_content =
-            include_bytes!("../../test-programs/cairo0/field-arithmetic/field_arithmetic.json")
-                .to_vec();
+        let program_content = include_bytes!(
+            "../../dependencies/test-programs/cairo0/field-arithmetic/field_arithmetic.json"
+        )
+        .to_vec();
 
         Program::from_bytes(&program_content, Some("main"))
             .expect("Loading example program failed unexpectedly")
