@@ -547,7 +547,7 @@ mod tests {
     #[fixture]
     fn fibonacci() -> Program {
         let program_content =
-            include_bytes!("../dependencies/cairo-programs/cairo0/fibonacci/fibonacci.json")
+            include_bytes!("../../test-programs/cairo0/fibonacci/fibonacci.json")
                 .to_vec();
 
         Program::from_bytes(&program_content, Some("main"))
@@ -556,14 +556,14 @@ mod tests {
 
     #[fixture]
     fn fibonacci_pie() -> CairoPie {
-        let pie_file = Path::new("../dependencies/cairo-programs/cairo0/fibonacci/fibonacci.zip");
+        let pie_file = Path::new("../../test-programs/bootloader/pies/fibonacci/cairo_pie.zip");
         CairoPie::read_zip_file(pie_file).expect("Failed to load the program PIE")
     }
 
     #[fixture]
     fn field_arithmetic_program() -> Program {
         let program_content = include_bytes!(
-            "../dependencies/cairo-programs/cairo0/field-arithmetic/field_arithmetic.json"
+            "../../test-programs/cairo0/field-arithmetic/field_arithmetic.json"
         )
         .to_vec();
 
