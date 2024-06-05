@@ -32,7 +32,7 @@ macro_rules! add_segments {
     };
 }
 #[macro_export]
-macro_rules! ids_data {
+macro_rules! ids_data_old {
     ( $( $name: expr ),* ) => {
         {
             #[allow(clippy::useless_vec)]
@@ -45,6 +45,20 @@ macro_rules! ids_data {
             ids_data
         }
     };
+}
+#[macro_export]
+macro_rules! ids_data {
+    ( $( $key:expr ),* ) => {{
+        let mut map = HashMap::<String, cairo_vm::hint_processor::hint_processor_definition::HintReference>::new();
+        let ids_names = vec![$( $key ),*];
+        let ids_len = ids_names.len() as i32;
+        let mut _value = -ids_len;
+        $(
+            map.insert($key.to_string(), cairo_vm::hint_processor::hint_processor_definition::HintReference::new_simple(_value));
+            _value += 1;
+        )*
+        map
+    }};
 }
 #[macro_export]
 macro_rules! references {
@@ -78,39 +92,6 @@ macro_rules! non_continuous_ids_data {
     };
 }
 
-#[macro_export]
-macro_rules! segments {
-    ($( (($si:expr, $off:expr), $val:tt) ),* $(,)? ) => {
-        {
-            let mut segments = cairo_vm::vm::vm_memory::memory_segments::MemorySegmentManager::new();
-            segments.memory = $crate::memory!($( (($si, $off), $val) ),*);
-            segments
-        }
-
-    };
-}
-
-#[macro_export]
-macro_rules! memory {
-    ( $( (($si:expr, $off:expr), $val:tt) ),* ) => {
-        {
-            let mut memory = cairo_vm::vm::vm_memory::memory::Memory::new();
-            $crate::memory_from_memory!(memory, ( $( (($si, $off), $val) ),* ));
-            memory
-        }
-    };
-}
-
-#[macro_export]
-macro_rules! memory_from_memory {
-    ($mem: expr, ( $( (($si:expr, $off:expr), $val:tt) ),* )) => {
-        {
-            $(
-                $crate::memory_inner!($mem, ($si, $off), $val);
-            )*
-        }
-    };
-}
 
 #[macro_export]
 macro_rules! insert_value_inner {
@@ -119,35 +100,13 @@ macro_rules! insert_value_inner {
             ($si, $off).into(),
             &$crate::mayberelocatable!($sival, $offval),
         );
-        let mut res = $vm.insert_value(k, v);
-        while matches!(
-            res,
-            Err(cairo_vm::vm::errors::memory_errors::MemoryError::UnallocatedSegment(_))
-        ) {
-            dbg!(&res);
-            if $si < 0 {
-                // $vm.temp_data.push(cairo_vm::stdlib::vec::Vec::new())
-            } else {
-                // $vm.data.push(cairo_vm::stdlib::vec::Vec::new());
-            }
-            res = $vm.insert_value(k, v);
-        }
+        $vm.insert_value(k, v).unwrap();
+        
     };
     ($vm:expr, ($si:expr, $off:expr), $val:expr) => {
         let (k, v) = (($si, $off).into(), &$crate::mayberelocatable!($val));
-        let mut res = $vm.insert_value(k, v);
-        while matches!(
-            res,
-            Err(cairo_vm::vm::errors::memory_errors::MemoryError::UnallocatedSegment(_))
-        ) {
-            dbg!(&res);
-            if $si < 0 {
-                // $mem.temp_data.push($crate::stdlib::vec::Vec::new())
-            } else {
-                // $mem.data.push($crate::stdlib::vec::Vec::new());
-            }
-            res = $vm.insert_value(k, v);
-        }
+        $vm.insert_value(k, v).unwrap();
+        
     };
 }
 
@@ -174,6 +133,7 @@ macro_rules! define_segments {
 }
 
 
+#[macro_export]
 macro_rules! run_hint {
     ($vm:expr, $ids_data:expr, $hint_code:expr, $exec_scopes:expr, $constants:expr) => {{
         let hint_data = HintProcessorData::new_default($hint_code.to_string(), $ids_data);
@@ -207,5 +167,4 @@ macro_rules! run_hint {
         )
     }};
 }
-pub(crate) use run_hint;
 

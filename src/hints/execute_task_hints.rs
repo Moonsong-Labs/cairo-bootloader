@@ -485,27 +485,24 @@ mod util {
 #[cfg(test)]
 mod tests {
     use std::path::Path;
-    use std::sync::Arc;
 
     use assert_matches::assert_matches;
-    use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::{
-        BuiltinHintProcessor, HintProcessorData,
-    };
-    use cairo_vm::hint_processor::builtin_hint_processor::hint_utils::get_maybe_relocatable_from_var_name;
+    use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::HintProcessorData;
+
+    use cairo_vm::any_box;
     use cairo_vm::hint_processor::hint_processor_definition::HintProcessorLogic;
-    use cairo_vm::serde::deserialize_program::{OffsetValue, ReferenceManager};
+    use cairo_vm::serde::deserialize_program::ReferenceManager;
     use cairo_vm::types::errors::math_errors::MathError;
     use cairo_vm::types::program::Program;
     use cairo_vm::types::relocatable::MaybeRelocatable;
     use cairo_vm::vm::runners::builtin_runner::BuiltinRunner;
-    use cairo_vm::vm::runners::cairo_pie::{BuiltinAdditionalData, OutputBuiltinAdditionalData, PublicMemoryPage};
-    use cairo_vm::{any_box, relocatable, Felt252};
-    use num_traits::ToPrimitive;
+    use cairo_vm::vm::runners::cairo_pie::{BuiltinAdditionalData, PublicMemoryPage};
+
     use rstest::{fixture, rstest};
 
     use crate::hints::codes::EXECUTE_TASK_CALL_TASK;
-    use crate::hints::types::{BootloaderConfig, SimpleBootloaderInput};
-    use crate::{add_segments, define_segments, ids_data, non_continuous_ids_data, run_hint, segments, vm};
+
+    use crate::{add_segments, define_segments, ids_data, non_continuous_ids_data, run_hint, vm};
 
     use super::*;
 
@@ -550,7 +547,8 @@ mod tests {
     #[fixture]
     fn fibonacci() -> Program {
         let program_content =
-            include_bytes!("../cairo-programs/fibonacci.json").to_vec();
+            include_bytes!("/home/geoff/Desktop/cairo-programs/cairo0/fibonacci/fibonacci.json")
+                .to_vec();
 
         Program::from_bytes(&program_content, Some("main"))
             .expect("Loading example program failed unexpectedly")
@@ -558,15 +556,16 @@ mod tests {
 
     #[fixture]
     fn fibonacci_pie() -> CairoPie {
-        let pie_file =
-            Path::new("../cairo-programs/pie.zip");
+        let pie_file = Path::new("/home/geoff/Desktop/cairo-vm/pie.zip");
         CairoPie::read_zip_file(pie_file).expect("Failed to load the program PIE")
     }
 
     #[fixture]
     fn field_arithmetic_program() -> Program {
-        let program_content =
-            include_bytes!("../cairo-programs/fibonacci.json").to_vec();
+        let program_content = include_bytes!(
+            "/home/geoff/Desktop/cairo-programs/cairo0/field-arithmetic/field_arithmetic.json"
+        )
+        .to_vec();
 
         Program::from_bytes(&program_content, Some("main"))
             .expect("Loading example program failed unexpectedly")
@@ -677,7 +676,8 @@ mod tests {
             identifiers,
             Default::default(),
             Default::default(),
-        ).unwrap();
+        )
+        .unwrap();
 
         program
     }
@@ -691,10 +691,13 @@ mod tests {
         // the Bootloader Cairo code. Our code only uses the first felt (`output` field in the
         // struct). Finally, we put the mocked output of `select_input_builtins` in the next
         // memory address and increase the AP register accordingly.
-        define_segments!(vm, 3, [((1, 0), (2, 0)), ((1, 1), (4, 0)), ((1, 9), (4, 42))]);
+        define_segments!(
+            vm,
+            3,
+            [((1, 0), (2, 0)), ((1, 1), (4, 0)), ((1, 9), (4, 42))]
+        );
         vm.set_ap(10);
         vm.set_fp(9);
-        add_segments!(vm, 3);
 
         let program_header_ptr = Relocatable::from((2, 0));
         let ids_data = non_continuous_ids_data![
@@ -752,7 +755,7 @@ mod tests {
                 (2, PublicMemoryPage { start: 7, size: 3 }),
             ]),
             attributes: HashMap::from([("gps_fact_topology".to_string(), tree_structure.clone())]),
-            base: 0
+            base: 0,
         };
         let mut output_builtin = OutputBuiltinRunner::new(true);
         output_builtin.set_state(program_output_data.clone());
@@ -769,9 +772,10 @@ mod tests {
 
         let mut exec_scopes = ExecutionScopes::new();
 
-        let output_runner_data = OutputBuiltinAdditionalData {
+        let output_runner_data = OutputBuiltinState {
             pages: HashMap::new(),
             attributes: HashMap::new(),
+            base: 0,
         };
         exec_scopes.insert_value(vars::OUTPUT_RUNNER_DATA, Some(output_runner_data.clone()));
         exec_scopes.insert_value(vars::TASK, task);
@@ -793,7 +797,7 @@ mod tests {
             vm.get_output_builtin_mut().unwrap().get_additional_data();
         assert!(matches!(
             output_builtin_additional_data,
-            BuiltinAdditionalData::Output(data) if data == output_runner_data,
+            BuiltinAdditionalData::Output(data) if data.pages == output_runner_data.pages && data.attributes == output_runner_data.attributes,
         ));
     }
 
@@ -809,19 +813,23 @@ mod tests {
         // Initialize the used builtins to {range_check: 30, bitwise: 50} as these two
         // are used by the field arithmetic program. Note that the used builtins list
         // does not contain empty elements (i.e. offsets are 8 and 9 instead of 10 and 12).
-        define_segments!(vm, 2, [
-            ((1, 0), (2, 1)),
-            ((1, 1), (2, 2)),
-            ((1, 2), (2, 3)),
-            ((1, 3), (2, 4)),
-            ((1, 4), (2, 5)),
-            ((1, 5), (2, 6)),
-            ((1, 6), (2, 7)),
-            ((1, 7), (2, 8)),
-            ((1, 8), (2, 30)),
-            ((1, 9), (2, 50)),
-            ((1, 24), (1, 8)),
-        ]);
+        define_segments!(
+            vm,
+            2,
+            [
+                ((1, 0), (2, 1)),
+                ((1, 1), (2, 2)),
+                ((1, 2), (2, 3)),
+                ((1, 3), (2, 4)),
+                ((1, 4), (2, 5)),
+                ((1, 5), (2, 6)),
+                ((1, 6), (2, 7)),
+                ((1, 7), (2, 8)),
+                ((1, 8), (2, 30)),
+                ((1, 9), (2, 50)),
+                ((1, 24), (1, 8)),
+            ]
+        );
         vm.set_fp(25);
         add_segments!(vm, 1);
 

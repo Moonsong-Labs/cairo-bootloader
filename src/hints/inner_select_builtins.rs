@@ -65,7 +65,7 @@ mod tests {
     use cairo_vm::Felt252;
     use rstest::rstest;
 
-    use crate::{add_segments, define_segments, ids_data, segments, vm};
+    use crate::{add_segments, define_segments, ids_data, vm};
 
     use super::*;
 

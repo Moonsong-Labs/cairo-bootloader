@@ -165,7 +165,7 @@ impl<'vm> ProgramLoader<'vm> {
 
 #[cfg(test)]
 mod tests {
-    use std::any::Any;
+    
 
     use cairo_vm::types::builtin_name::BuiltinName;
     use cairo_vm::types::program::Program;
@@ -173,11 +173,11 @@ mod tests {
     use cairo_vm::vm::runners::cairo_pie::StrippedProgram;
     use cairo_vm::vm::vm_memory::memory_segments::MemorySegmentManager;
     use cairo_vm::Felt252;
-    use num_traits::ToPrimitive;
+    
     use rstest::{fixture, rstest};
-    use serde::Serialize;
+    
 
-    use crate::hints::types::BootloaderVersion;
+    use crate::{add_segments, hints::types::BootloaderVersion};
 
     use super::*;
 
@@ -242,7 +242,7 @@ mod tests {
     #[fixture]
     fn fibonacci() -> Program {
         let program_content =
-            include_bytes!("../cairo-programs/fibonacci.json").to_vec();
+            include_bytes!("/home/geoff/Desktop/test-cairo/fibonacci.json").to_vec();
 
         Program::from_bytes(&program_content, Some("main"))
             .expect("Loading example program failed unexpectedly")
@@ -282,6 +282,7 @@ mod tests {
         let program = fibonacci.get_stripped_program().unwrap();
 
         let mut vm = VirtualMachine::new(false);
+        add_segments!(vm, 2);
         let mut segments = MemorySegmentManager::new();
         let base_address = segments.add();
 
@@ -318,6 +319,7 @@ mod tests {
         let program = fibonacci.get_stripped_program().unwrap();
 
         let mut vm = VirtualMachine::new(false);
+        add_segments!(vm, 2);
         let mut segments = MemorySegmentManager::new();
         let base_address = segments.add();
 

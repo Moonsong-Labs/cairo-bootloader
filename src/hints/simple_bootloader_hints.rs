@@ -134,30 +134,30 @@ mod tests {
     use std::collections::HashMap;
 
     use cairo_vm::hint_processor::builtin_hint_processor::hint_utils::{
-        get_ptr_from_var_name, get_relocatable_from_var_name, insert_value_from_var_name,
+        get_ptr_from_var_name,
+        insert_value_from_var_name,
     };
+    
     use cairo_vm::serde::deserialize_program::ApTracking;
     use cairo_vm::types::exec_scope::ExecutionScopes;
     use cairo_vm::types::program::Program;
-    use cairo_vm::types::relocatable::{MaybeRelocatable, Relocatable};
-    use cairo_vm::vm::errors::hint_errors::HintError;
-    use cairo_vm::vm::errors::memory_errors::MemoryError;
-    use cairo_vm::vm::runners::builtin_runner::OutputBuiltinRunner;
-    use cairo_vm::vm::runners::cairo_pie::{
-        CairoPie, OutputBuiltinAdditionalData, StrippedProgram,
-    };
+    use cairo_vm::types::relocatable::{Relocatable};
+    
+    
+    
+    
     use cairo_vm::vm::vm_core::VirtualMachine;
-    use cairo_vm::vm::vm_memory::memory::Memory;
-    use cairo_vm::{any_box, Felt252};
+    
+    use cairo_vm::{Felt252};
     use num_traits::ToPrimitive;
     use rstest::{fixture, rstest};
-    use starknet_crypto::FieldElement;
+    
 
-    use crate::hints::fact_topologies::{get_task_fact_topology, FactTopology};
-    use crate::hints::load_cairo_pie::load_cairo_pie;
-    use crate::hints::program_hash::compute_program_hash_chain;
-    use crate::hints::program_loader::ProgramLoader;
-    use crate::hints::types::{BootloaderVersion, Task, TaskSpec};
+    use crate::hints::fact_topologies::{FactTopology};
+    
+    
+    
+    use crate::hints::types::{Task, TaskSpec};
     use crate::hints::vars;
     use crate::{add_segments, define_segments, ids_data, vm};
 
@@ -166,7 +166,7 @@ mod tests {
     #[fixture]
     fn fibonacci() -> Program {
         let program_content =
-            include_bytes!("../cairo-programs/fibonacci.json").to_vec();
+            include_bytes!("/home/geoff/Desktop/test-cairo/fibonacci.json").to_vec();
 
         Program::from_bytes(&program_content, Some("main"))
             .expect("Loading example program failed unexpectedly")
@@ -260,9 +260,9 @@ mod tests {
         let expected_num_felt = Felt252::from(expected);
 
         let mut vm = vm!();
-        add_segments!(vm, 2);
         vm.set_ap(1);
         vm.set_fp(1);
+        add_segments!(vm, 2);
 
         let ids_data = ids_data!["num"];
         let ap_tracking = ApTracking::new();
@@ -298,8 +298,12 @@ mod tests {
         exec_scopes.insert_value(vars::SIMPLE_BOOTLOADER_INPUT, simple_bootloader_input);
 
         let ids_data = ids_data!["n_tasks", "task"];
+        // let ids_data = HashMap::from([
+        //     ("n_tasks".to_string(), HintReference::new_simple(-2)),
+        //     ("task".to_string(), HintReference::new_simple(-1)),
+        // ]);
+        dbg!(&ids_data);
         let ap_tracking = ApTracking::new();
-
         set_current_task(&mut vm, &mut exec_scopes, &ids_data, &ap_tracking)
             .expect("Hint failed unexpectedly");
 

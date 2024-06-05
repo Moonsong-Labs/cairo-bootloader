@@ -45,7 +45,7 @@ mod tests {
     use cairo_vm::vm::vm_core::VirtualMachine;
     use std::collections::HashMap;
 
-    use crate::{define_segments, ids_data, segments, vm};
+    use crate::{define_segments, ids_data, vm};
 
     use super::*;
 

@@ -434,14 +434,16 @@ mod tests {
     use num_traits::ToPrimitive;
 
     use crate::hints::codes::{
-        BOOTLOADER_GUESS_PRE_IMAGE_OF_SUBTASKS_OUTPUT_HASH, BOOTLOADER_SAVE_OUTPUT_POINTER, BOOTLOADER_SAVE_PACKED_OUTPUTS, BOOTLOADER_SET_PACKED_OUTPUT_TO_SUBTASKS, EXECUTE_TASK_ASSERT_PROGRAM_ADDRESS
+        BOOTLOADER_GUESS_PRE_IMAGE_OF_SUBTASKS_OUTPUT_HASH, BOOTLOADER_SAVE_OUTPUT_POINTER,
+        BOOTLOADER_SAVE_PACKED_OUTPUTS, BOOTLOADER_SET_PACKED_OUTPUT_TO_SUBTASKS,
+        EXECUTE_TASK_ASSERT_PROGRAM_ADDRESS,
     };
     use crate::hints::types::{BootloaderConfig, SimpleBootloaderInput};
-    use crate::{add_segments, define_segments, ids_data, run_hint, segments, vm, MinimalBootloaderHintProcessor};
-    use assert_matches::assert_matches;
-    use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::{
-        BuiltinHintProcessor, HintProcessorData,
+    use crate::{
+        add_segments, define_segments, ids_data, run_hint, vm, MinimalBootloaderHintProcessor,
     };
+    use assert_matches::assert_matches;
+    use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::HintProcessorData;
     use cairo_vm::hint_processor::builtin_hint_processor::hint_utils::get_maybe_relocatable_from_var_name;
     use cairo_vm::hint_processor::hint_processor_definition::HintProcessorLogic;
     use cairo_vm::serde::deserialize_program::OffsetValue;
@@ -564,7 +566,7 @@ mod tests {
     fn test_restore_bootloader_output() {
         let mut vm: VirtualMachine = vm!();
         // The VM must have an existing output segment
-        let output_segment = vm.add_memory_segment();
+        vm.add_memory_segment();
         vm.builtin_runners = vec![OutputBuiltinRunner::new(true).into()];
 
         let mut exec_scopes = ExecutionScopes::new();
@@ -686,8 +688,9 @@ mod tests {
         // Set n_subtasks to 2
         vm.set_fp(1);
         define_segments!(vm, 2, [((1, 0), 2)]);
-        let ids_data = ids_data!["n_subtasks"];
-
+        // let ids_data = ids_data!["n_subtasks"];
+        let ids_data = HashMap::from([("n_subtasks".to_string(), HintReference::new_simple(-1))]);
+        dbg!(&ids_data);
         let ap_tracking = ApTracking::default();
 
         let mut exec_scopes = ExecutionScopes::new();
