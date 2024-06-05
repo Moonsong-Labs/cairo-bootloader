@@ -155,7 +155,7 @@ macro_rules! run_hint {
     }};
     ($vm:expr, $ids_data:expr, $hint_code:expr) => {{
         let hint_data = HintProcessorData::new_default(
-            crate::stdlib::string::ToString::to_string($hint_code),
+            $crate::stdlib::string::ToString::to_string($hint_code),
             $ids_data,
         );
         let mut hint_processor = $crate::MinimalBootloaderHintProcessor::new();
