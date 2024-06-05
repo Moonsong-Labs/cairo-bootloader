@@ -165,7 +165,6 @@ impl<'vm> ProgramLoader<'vm> {
 
 #[cfg(test)]
 mod tests {
-    
 
     use cairo_vm::types::builtin_name::BuiltinName;
     use cairo_vm::types::program::Program;
@@ -173,9 +172,8 @@ mod tests {
     use cairo_vm::vm::runners::cairo_pie::StrippedProgram;
     use cairo_vm::vm::vm_memory::memory_segments::MemorySegmentManager;
     use cairo_vm::Felt252;
-    
+
     use rstest::{fixture, rstest};
-    
 
     use crate::{add_segments, hints::types::BootloaderVersion};
 
@@ -242,7 +240,8 @@ mod tests {
     #[fixture]
     fn fibonacci() -> Program {
         let program_content =
-            include_bytes!("../dependencies//test-cairo/fibonacci.json").to_vec();
+            include_bytes!("../dependencies/cairo-programs/cairo0/fibonacci/fibonacci.json")
+                .to_vec();
 
         Program::from_bytes(&program_content, Some("main"))
             .expect("Loading example program failed unexpectedly")
