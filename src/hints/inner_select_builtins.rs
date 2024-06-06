@@ -65,6 +65,8 @@ mod tests {
     use cairo_vm::Felt252;
     use rstest::rstest;
 
+    use crate::{add_segments, define_segments, ids_data, vm};
+
     use super::*;
 
     #[rstest]
@@ -81,14 +83,18 @@ mod tests {
             builtin_value + 1
         };
 
-        vm.segments = segments![
-            ((1, 0), (2, 0)),
-            ((1, 1), (2, 1)),
-            ((2, 0), builtin_value),
-            ((2, 1), expected_value)
-        ];
+        define_segments!(
+            vm,
+            3,
+            [
+                ((1, 0), (2, 0)),
+                ((1, 1), (2, 1)),
+                ((2, 0), builtin_value),
+                ((2, 1), expected_value)
+            ]
+        );
         // Allocate space for program_data_ptr
-        vm.run_context.fp = 3;
+        vm.set_fp(3);
         add_segments!(vm, 2);
         let ids_data = ids_data!["selected_encodings", "all_encodings", "select_builtin"];
         let ap_tracking = ApTracking::new();
@@ -102,7 +108,7 @@ mod tests {
         let select_builtin =
             get_integer_from_var_name("select_builtin", &vm, &ids_data, &ap_tracking)
                 .unwrap()
-                .into_owned();
+                .to_owned();
         let n_selected_builtins: usize = exec_scopes.get(vars::N_SELECTED_BUILTINS).unwrap();
 
         if (n_builtins != 0) && should_select_builtin {

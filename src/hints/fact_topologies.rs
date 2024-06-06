@@ -154,6 +154,7 @@ pub fn compute_fact_topologies<'a>(
 /// * `output_start`: Start of the output range for this fact topology.
 ///
 /// Reimplements the following Python code:
+/// ```no-run
 ///     offset = 0
 ///     for i, page_size in enumerate(fact_topology.page_sizes):
 ///         output_builtin.add_page(
@@ -162,6 +163,7 @@ pub fn compute_fact_topologies<'a>(
 ///         offset += page_size
 ///
 ///     return len(fact_topology.page_sizes)
+/// ```
 fn add_consecutive_output_pages(
     fact_topology: &FactTopology,
     output_builtin: &mut OutputBuiltinRunner,

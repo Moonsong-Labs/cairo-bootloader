@@ -165,19 +165,15 @@ impl<'vm> ProgramLoader<'vm> {
 
 #[cfg(test)]
 mod tests {
-    use std::any::Any;
-
     use cairo_vm::types::builtin_name::BuiltinName;
     use cairo_vm::types::program::Program;
     use cairo_vm::types::relocatable::Relocatable;
     use cairo_vm::vm::runners::cairo_pie::StrippedProgram;
     use cairo_vm::vm::vm_memory::memory_segments::MemorySegmentManager;
     use cairo_vm::Felt252;
-    use num_traits::ToPrimitive;
     use rstest::{fixture, rstest};
-    use serde::Serialize;
 
-    use crate::hints::types::BootloaderVersion;
+    use crate::{add_segments, hints::types::BootloaderVersion};
 
     use super::*;
 
@@ -242,9 +238,9 @@ mod tests {
     #[fixture]
     fn fibonacci() -> Program {
         let program_content =
-            include_bytes!("../../../../../cairo_programs/fibonacci.json").to_vec();
+            include_bytes!("../../dependencies/test-programs/cairo0/fibonacci/fibonacci.json");
 
-        Program::from_bytes(&program_content, Some("main"))
+        Program::from_bytes(program_content, Some("main"))
             .expect("Loading example program failed unexpectedly")
     }
 
@@ -282,6 +278,7 @@ mod tests {
         let program = fibonacci.get_stripped_program().unwrap();
 
         let mut vm = VirtualMachine::new(false);
+        add_segments!(vm, 2);
         let mut segments = MemorySegmentManager::new();
         let base_address = segments.add();
 
@@ -295,7 +292,7 @@ mod tests {
 
         check_loaded_header(&vm, base_address.clone(), &program, bootloader_version);
 
-        let builtin_list_ptr = (base_address + builtins_offset)?;
+        let builtin_list_ptr = (base_address + builtins_offset).unwrap();
         check_loaded_builtins(&vm, &vec![], builtin_list_ptr);
     }
 
@@ -318,6 +315,7 @@ mod tests {
         let program = fibonacci.get_stripped_program().unwrap();
 
         let mut vm = VirtualMachine::new(false);
+        add_segments!(vm, 2);
         let mut segments = MemorySegmentManager::new();
         let base_address = segments.add();
 
