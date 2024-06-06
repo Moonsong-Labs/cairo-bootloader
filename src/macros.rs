@@ -28,24 +28,6 @@ macro_rules! ids_data {
         map
     }};
 }
-#[macro_export]
-macro_rules! references {
-    ($num: expr) => {{
-        let mut references = HashMap::<
-            usize,
-            cairo_vm::hint_processor::hint_processor_definition::HintReference,
-        >::new();
-        for i in 0..$num {
-            references.insert(
-                i as usize,
-                cairo_vm::hint_processor::hint_processor_definition::HintReference::new_simple(
-                    (i as i32),
-                ),
-            );
-        }
-        references
-    }};
-}
 
 #[macro_export]
 macro_rules! non_continuous_ids_data {
