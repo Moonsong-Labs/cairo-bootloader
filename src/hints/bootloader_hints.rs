@@ -452,7 +452,7 @@ mod tests {
     use cairo_vm::vm::runners::builtin_runner::{
         BuiltinRunner, OutputBuiltinRunner, OutputBuiltinState,
     };
-    use cairo_vm::vm::runners::cairo_pie::PublicMemoryPage;
+    use cairo_vm::vm::runners::cairo_pie::{BuiltinAdditionalData, PublicMemoryPage};
     use cairo_vm::{any_box, relocatable, Felt252};
     use rstest::{fixture, rstest};
 
@@ -568,8 +568,14 @@ mod tests {
     fn test_restore_bootloader_output() {
         let mut vm: VirtualMachine = vm!();
         // The VM must have an existing output segment
-        vm.add_memory_segment();
-        vm.builtin_runners = vec![OutputBuiltinRunner::new(true).into()];
+        let output_segment = vm.add_memory_segment();
+        let output_builtin = {
+            let mut builtin = OutputBuiltinRunner::new(true);
+            builtin.new_state(output_segment.segment_index.try_into().unwrap(), true);
+            builtin
+        };
+
+        vm.builtin_runners = vec![output_builtin.into()];
 
         let mut exec_scopes = ExecutionScopes::new();
         let new_segment = vm.add_memory_segment();
@@ -690,7 +696,6 @@ mod tests {
         // Set n_subtasks to 2
         vm.set_fp(1);
         define_segments!(vm, 2, [((1, 0), 2)]);
-        // let ids_data = ids_data!["n_subtasks"];
         let ids_data = HashMap::from([("n_subtasks".to_string(), HintReference::new_simple(-1))]);
         let ap_tracking = ApTracking::default();
 
@@ -742,8 +747,8 @@ mod tests {
         assert!(is_plain(&mut vm, &mut exec_scopes, plain_packed_output));
 
         // Increment AP to avoid an inconsistent memory error writing in the same slot
-        let new_ap = (*&vm.get_ap() + 1usize).unwrap();
-        vm.set_ap(new_ap.offset);
+        let new_ap = &vm.get_ap().offset + 1usize;
+        vm.set_ap(new_ap);
         assert!(!is_plain(
             &mut vm,
             &mut exec_scopes,
@@ -875,7 +880,7 @@ mod tests {
             }
         );
         let pages = match vm.get_output_builtin_mut().unwrap().get_additional_data() {
-            cairo_vm::vm::runners::cairo_pie::BuiltinAdditionalData::Output(o) => o.pages,
+            BuiltinAdditionalData::Output(o) => o.pages,
             _ => unreachable!("Type should be Output"),
         };
 

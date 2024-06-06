@@ -502,8 +502,9 @@ mod tests {
     use rstest::{fixture, rstest};
 
     use crate::hints::codes::EXECUTE_TASK_CALL_TASK;
+    use crate::ids_data;
 
-    use crate::{add_segments, define_segments, ids_data, non_continuous_ids_data, run_hint, vm};
+    // use crate::{add_segments, define_segments, ids_data, non_continuous_ids_data, run_hint, vm};
 
     use super::*;
 
@@ -600,8 +601,7 @@ mod tests {
 
         // The Fibonacci program has no builtins -> the header size is 4
         let header_size = 4;
-        let code_address: Result<Relocatable, MathError> = *&program_header_ptr + header_size;
-        let expected_code_address: Relocatable = code_address.unwrap();
+        let expected_code_address = (program_header_ptr + header_size).unwrap();
 
         let program_address: Relocatable = exec_scopes.get(vars::PROGRAM_ADDRESS).unwrap();
         assert_eq!(program_address, expected_code_address);
