@@ -39,6 +39,10 @@ jobs:
       - name: Run Rust tests
         run: |
           RUSTFLAGS="-D warnings" cargo test
+      - name: Run examples
+        run: |
+          RUSTFLAGS="-D warnings" cargo run --example run_cairo_pie
+          RUSTFLAGS="-D warnings" cargo run --example run_program
 
   udeps:
     runs-on: ubuntu-latest

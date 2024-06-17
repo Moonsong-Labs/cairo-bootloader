@@ -9,7 +9,7 @@ mod program_hash;
 mod program_loader;
 mod select_builtins;
 mod simple_bootloader_hints;
-mod types;
+pub(crate) mod types;
 mod vars;
 
 pub use hint_processors::{BootloaderHintProcessor, MinimalBootloaderHintProcessor};
@@ -17,4 +17,4 @@ pub use types::{
     BootloaderConfig, BootloaderInput, PackedOutput, SimpleBootloaderInput, Task, TaskSpec,
 };
 
-pub use vars::BOOTLOADER_INPUT;
+pub use vars::{BOOTLOADER_INPUT, BOOTLOADER_PROGRAM_IDENTIFIERS};
