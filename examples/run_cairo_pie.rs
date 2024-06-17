@@ -10,7 +10,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let tasks = make_bootloader_tasks(&[], &[fibonacci_pie])?;
 
-    let mut runner = cairo_run_bootloader_in_proof_mode(tasks)?;
+    let mut runner = cairo_run_bootloader_in_proof_mode(tasks, None, None, None)?;
 
     let mut output_buffer = "Bootloader output:\n".to_string();
     runner.vm.write_output(&mut output_buffer)?;

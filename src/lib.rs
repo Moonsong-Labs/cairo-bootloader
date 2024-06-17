@@ -1,12 +1,16 @@
-use crate::bootloaders::load_bootloader;
-use crate::hints::types::ProgramIdentifiers;
+use std::path::PathBuf;
+
 use cairo_vm::cairo_run::{cairo_run_program_with_initial_scope, CairoRunConfig};
 use cairo_vm::types::exec_scope::ExecutionScopes;
 use cairo_vm::types::layout_name::LayoutName;
 use cairo_vm::types::program::Program;
 use cairo_vm::vm::errors::cairo_run_errors::CairoRunError;
 use cairo_vm::vm::runners::cairo_runner::CairoRunner;
+
 pub use hints::*;
+
+use crate::bootloaders::load_bootloader;
+use crate::hints::types::ProgramIdentifiers;
 
 pub mod bootloaders;
 mod hints;
@@ -35,6 +39,9 @@ pub fn prepare_bootloader_exec_scopes(
 /// or other parameters.
 pub fn cairo_run_bootloader_in_proof_mode(
     tasks: Vec<TaskSpec>,
+    layout: Option<LayoutName>,
+    allow_missing_builtins: Option<bool>,
+    fact_topologies_path: Option<PathBuf>,
 ) -> Result<CairoRunner, CairoRunError> {
     let mut hint_processor = BootloaderHintProcessor::new();
 
@@ -44,15 +51,15 @@ pub fn cairo_run_bootloader_in_proof_mode(
         entrypoint: "main",
         trace_enabled: false,
         relocate_mem: false,
-        layout: LayoutName::starknet_with_keccak,
+        layout: layout.unwrap_or(LayoutName::starknet_with_keccak),
         proof_mode: true,
         secure_run: None,
         disable_trace_padding: false,
-        allow_missing_builtins: None,
+        allow_missing_builtins,
     };
 
     // Build the bootloader input
-    let bootloader_input = BootloaderInput::from_tasks(tasks);
+    let bootloader_input = BootloaderInput::new(tasks, fact_topologies_path);
 
     // Load initial variables in the exec scopes
     let mut exec_scopes = ExecutionScopes::new();

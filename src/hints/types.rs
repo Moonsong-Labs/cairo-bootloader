@@ -80,11 +80,11 @@ pub struct BootloaderInput {
 }
 
 impl BootloaderInput {
-    pub fn from_tasks(tasks: Vec<TaskSpec>) -> Self {
+    pub fn new(tasks: Vec<TaskSpec>, fact_topologies_path: Option<PathBuf>) -> Self {
         let n_tasks = tasks.len();
         Self {
             simple_bootloader_input: SimpleBootloaderInput {
-                fact_topologies_path: None,
+                fact_topologies_path,
                 single_page: false,
                 tasks,
             },
