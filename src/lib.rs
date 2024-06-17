@@ -1,3 +1,4 @@
+use crate::bootloaders::load_bootloader;
 use crate::hints::types::ProgramIdentifiers;
 use cairo_vm::cairo_run::{cairo_run_program_with_initial_scope, CairoRunConfig};
 use cairo_vm::types::exec_scope::ExecutionScopes;
@@ -33,10 +34,11 @@ pub fn prepare_bootloader_exec_scopes(
 /// Reimplement your own version of this function if you wish to modify the Cairo run config
 /// or other parameters.
 pub fn cairo_run_bootloader_in_proof_mode(
-    bootloader_program: &Program,
     tasks: Vec<TaskSpec>,
 ) -> Result<CairoRunner, CairoRunError> {
     let mut hint_processor = BootloaderHintProcessor::new();
+
+    let bootloader_program = load_bootloader()?;
 
     let cairo_run_config = CairoRunConfig {
         entrypoint: "main",
@@ -54,11 +56,11 @@ pub fn cairo_run_bootloader_in_proof_mode(
 
     // Load initial variables in the exec scopes
     let mut exec_scopes = ExecutionScopes::new();
-    prepare_bootloader_exec_scopes(&mut exec_scopes, bootloader_input, bootloader_program);
+    prepare_bootloader_exec_scopes(&mut exec_scopes, bootloader_input, &bootloader_program);
 
     // Run the bootloader
     cairo_run_program_with_initial_scope(
-        bootloader_program,
+        &bootloader_program,
         &cairo_run_config,
         &mut hint_processor,
         exec_scopes,
