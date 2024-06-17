@@ -49,8 +49,8 @@ pub fn cairo_run_bootloader_in_proof_mode(
 
     let cairo_run_config = CairoRunConfig {
         entrypoint: "main",
-        trace_enabled: false,
-        relocate_mem: false,
+        trace_enabled: true,
+        relocate_mem: true,
         layout: layout.unwrap_or(LayoutName::starknet_with_keccak),
         proof_mode: true,
         secure_run: None,
