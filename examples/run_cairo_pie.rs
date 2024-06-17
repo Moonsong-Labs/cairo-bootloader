@@ -6,9 +6,11 @@ use cairo_bootloader::tasks::make_bootloader_tasks;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let bootloader_program = load_bootloader()?;
-    let fibonacci_program = include_bytes!("fibonacci.json");
+    let fibonacci_pie = include_bytes!(
+        "../dependencies/test-programs/bootloader/pies/fibonacci-stone-e2e/cairo_pie.zip"
+    );
 
-    let tasks = make_bootloader_tasks(&[fibonacci_program], &[])?;
+    let tasks = make_bootloader_tasks(&[], &[fibonacci_pie])?;
 
     let mut runner = cairo_run_bootloader_in_proof_mode(&bootloader_program, tasks)?;
 

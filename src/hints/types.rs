@@ -78,3 +78,21 @@ pub struct BootloaderInput {
     pub bootloader_config: BootloaderConfig,
     pub packed_outputs: Vec<PackedOutput>,
 }
+
+impl BootloaderInput {
+    pub fn from_tasks(tasks: Vec<TaskSpec>) -> Self {
+        let n_tasks = tasks.len();
+        Self {
+            simple_bootloader_input: SimpleBootloaderInput {
+                fact_topologies_path: None,
+                single_page: false,
+                tasks,
+            },
+            bootloader_config: BootloaderConfig {
+                simple_bootloader_program_hash: Felt252::from(0),
+                supported_cairo_verifier_program_hashes: vec![],
+            },
+            packed_outputs: vec![PackedOutput::Plain(vec![]); n_tasks],
+        }
+    }
+}
