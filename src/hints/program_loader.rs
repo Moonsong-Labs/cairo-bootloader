@@ -1,11 +1,17 @@
+use std::collections::HashMap;
+
+use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::{BuiltinHintProcessor, HintProcessorData};
+use cairo_vm::hint_processor::hint_processor_definition::{HintExtension, HintProcessorLogic};
+use cairo_vm::serde::deserialize_program::ApTracking;
 use cairo_vm::types::builtin_name::BuiltinName;
 use cairo_vm::types::errors::math_errors::MathError;
+use cairo_vm::types::program::Program;
 use cairo_vm::types::relocatable::Relocatable;
 use cairo_vm::vm::errors::hint_errors::HintError;
 use cairo_vm::vm::errors::memory_errors::MemoryError;
 use cairo_vm::vm::runners::cairo_pie::StrippedProgram;
 use cairo_vm::vm::vm_core::VirtualMachine;
-use cairo_vm::Felt252;
+use cairo_vm::{any_box, Felt252};
 
 use crate::hints::types::BootloaderVersion;
 
@@ -161,6 +167,54 @@ impl<'vm> ProgramLoader<'vm> {
             size: header_size + program.data.len(),
         })
     }
+
+    /// Extracts and relocates the hints found in the given program and returns the result in a way
+    /// that is suitable to be used in cairo-vm's "extensive hints" feature.
+    pub fn load_hints(
+        &self,
+        program: &Program,
+        program_base: Relocatable,
+        ap_tracking: &ApTracking,
+    ) -> Result<HintExtension, ProgramLoaderError> {
+        // TODO: these structs are private (pub(crate))
+        let hints_collection = program.shared_program_data.hints_collection;
+        let mut hint_extension = HintExtension::new();
+        for (pc, hint_range) in hints_collection.hints_ranges {
+            let relocated_pc = pc + program_base;
+            let hint_code = "FIXME"; // TODO
+            let hint_processor_data = HintProcessorData {
+                code: hint_code.to_string(),
+                ap_tracking: ap_tracking.clone(),
+                ids_data: Default::default(), // TODO
+            };
+            // TODO: more expressive way to do this
+            if !hint_extension.contains_key(relocated_pc) {
+                hint_extension.insert(relocated_pc.clone(), Vec::new());
+            }
+            hint_extension
+                .get(relocated_pc)
+                .expect("value inserted if missing abev, QED")
+                .push(any_box!(hint_processor_data));
+        }
+
+        // TODO: we ultimately want these remapped_hints to be part of the hints map used during
+        //       execution, and it should use the extensive hints feature added in
+        //       https://github.com/lambdaclass/cairo-vm/pull/1491
+        // 
+        //       this could either work with self.vm directly (?) or could return something that is used
+        //       by the caller to initialize the hint processor.
+        //       cairo-lang's load_hints works differently: it is called from load_program and stores
+        //       the remapped results as a private member for later use. (our load_program() takes a
+        //       StrippedProgram instead of a Program which makes this pattern impossible currently)
+        //
+        // Note: we are already in a hint (by nature of not being in cairo code), so we can use the hint extension
+        // feature of blockifier (where a hint returns the hint extensions), so that just means we need to 
+        // propagate the remapped hints back to to caller until we return from a hint
+
+        // load program hint is where we are
+
+        Ok(hint_extension)
+    }
 }
 
 #[cfg(test)]
@@ -312,6 +366,7 @@ mod tests {
 
     #[rstest]
     fn test_load_program(fibonacci: Program) {
+
         let program = fibonacci.get_stripped_program().unwrap();
 
         let mut vm = VirtualMachine::new(false);

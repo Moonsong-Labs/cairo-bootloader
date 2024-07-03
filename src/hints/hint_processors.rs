@@ -107,7 +107,6 @@ impl HintProcessorLogic for MinimalBootloaderHintProcessor {
             EXECUTE_TASK_ALLOCATE_PROGRAM_DATA_SEGMENT => {
                 allocate_program_data_segment(vm, exec_scopes, ids_data, ap_tracking)
             }
-            EXECUTE_TASK_LOAD_PROGRAM => load_program_hint(vm, exec_scopes, ids_data, ap_tracking),
             EXECUTE_TASK_VALIDATE_HASH => validate_hash(vm, exec_scopes, ids_data, ap_tracking),
             EXECUTE_TASK_ASSERT_PROGRAM_ADDRESS => {
                 assert_program_address(vm, exec_scopes, ids_data, ap_tracking)
@@ -130,6 +129,29 @@ impl HintProcessorLogic for MinimalBootloaderHintProcessor {
                 unknown_hint_code.to_string().into_boxed_str(),
             )),
         }
+    }
+
+    /// Executes extensive hints as appropriate, then falls back to non-extensive hints.
+    fn execute_hint_extensive(
+        &mut self,
+        vm: &mut VirtualMachine,
+        exec_scopes: &mut ExecutionScopes,
+        hint_data_any: &Box<dyn Any>,
+        constants: &HashMap<String, Felt252>,
+    ) -> Result<HintExtension, HintError> {
+        let hint_data = hint_data_any
+            .downcast_ref::<HintProcessorData>()
+            .ok_or(HintError::WrongHintData)?;
+
+        let ids_data = &hint_data.ids_data;
+        let ap_tracking = &hint_data.ap_tracking;
+
+        let mut hint_extensions = HintExtension::default();
+        match hint_data.code.as_str() {
+            EXECUTE_TASK_LOAD_PROGRAM => hint_extensions.extend(load_program_hint(vm, exec_scopes, ids_data, ap_tracking)?),
+            _ => self.execute_hint(vm, exec_scopes, hint_data_any, constants)?,
+        }
+        Ok(hint_extensions)
     }
 }
 

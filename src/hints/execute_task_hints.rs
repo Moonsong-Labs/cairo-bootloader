@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use cairo_vm::hint_processor::builtin_hint_processor::hint_utils::{
     get_ptr_from_var_name, get_relocatable_from_var_name, insert_value_from_var_name,
 };
-use cairo_vm::hint_processor::hint_processor_definition::HintReference;
+use cairo_vm::hint_processor::hint_processor_definition::{HintExtension, HintReference};
 use cairo_vm::serde::deserialize_program::{ApTracking, Identifier};
 use cairo_vm::types::builtin_name::BuiltinName;
 use cairo_vm::types::exec_scope::ExecutionScopes;
@@ -70,7 +70,7 @@ pub fn load_program_hint(
     exec_scopes: &mut ExecutionScopes,
     ids_data: &HashMap<String, HintReference>,
     ap_tracking: &ApTracking,
-) -> Result<(), HintError> {
+) -> Result<HintExtension, HintError> {
     let program_data_base: Relocatable = exec_scopes.get(vars::PROGRAM_DATA_BASE)?;
     let task: Task = exec_scopes.get(vars::TASK)?;
     let program = get_program_from_task(&task)?;
@@ -85,6 +85,12 @@ pub fn load_program_hint(
         .load_program(program_header_ptr, &program, Some(bootloader_version))
         .map_err(Into::<HintError>::into)?;
 
+    // if task is a Program, attempt to load hints from it
+    let mut hint_extension = HintExtension::new();
+    if let Task::Program(program) = task {
+        hint_extension.extend(program_loader.load_hints(&program, program_header_ptr, ap_tracking)?);
+    }
+
     vm.segments.finalize(
         Some(loaded_program.size),
         program_data_base.segment_index as usize,
@@ -93,7 +99,7 @@ pub fn load_program_hint(
 
     exec_scopes.insert_value(vars::PROGRAM_ADDRESS, loaded_program.code_address);
 
-    Ok(())
+    Ok(hint_extension)
 }
 
 /// Implements
