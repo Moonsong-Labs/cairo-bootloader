@@ -36,15 +36,19 @@ use crate::hints::vars;
 /// %}
 /// ```
 pub fn prepare_simple_bootloader_output_segment(
-    vm: &mut VirtualMachine,
     exec_scopes: &mut ExecutionScopes,
-    ids_data: &HashMap<String, HintReference>,
-    ap_tracking: &ApTracking,
 ) -> Result<(), HintError> {
     // Python: bootloader_input = BootloaderInput.Schema().load(program_input)
     // -> Assert that the bootloader input has been loaded when setting up the VM
     let _bootloader_input: &BootloaderInput = exec_scopes.get_ref(vars::BOOTLOADER_INPUT)?;
-
+    Ok(())
+}
+pub fn bootloader_runner_output_segment(
+    vm: &mut VirtualMachine,
+    ids_data: &HashMap<String, HintReference>,
+    ap_tracking: &ApTracking,
+    exec_scopes: &mut ExecutionScopes,
+) -> Result<(), HintError> {
     // Python: ids.simple_bootloader_output_start = segments.add()
     let new_segment_base = vm.add_memory_segment();
     insert_value_from_var_name(
@@ -70,7 +74,6 @@ pub fn prepare_simple_bootloader_output_segment(
         ids_data,
         ap_tracking,
     )?;
-
     Ok(())
 }
 
@@ -498,10 +501,7 @@ mod tests {
 
         exec_scopes.insert_value(vars::BOOTLOADER_INPUT, bootloader_input);
         prepare_simple_bootloader_output_segment(
-            &mut vm,
             &mut exec_scopes,
-            &ids_data,
-            &ap_tracking,
         )
         .expect("Hint failed unexpectedly");
 
@@ -537,10 +537,7 @@ mod tests {
         let ap_tracking = ApTracking::default();
 
         let result = prepare_simple_bootloader_output_segment(
-            &mut vm,
             &mut exec_scopes,
-            &ids_data,
-            &ap_tracking,
         );
         let hint_error =
             result.expect_err("Hint should fail, the bootloader input variable is not set");

@@ -1,0 +1,19 @@
+[package]
+name = "bootloader"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+cairo-vm.workspace = true
+num-traits.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+starknet-crypto.workspace = true
+starknet-types-core.workspace = true
+thiserror.workspace = true
+thiserror-no-std.workspace = true
+bincode.workspace = true
+
+[dev-dependencies]
+assert_matches = "1.5.0"
+rstest = "0.19.0"

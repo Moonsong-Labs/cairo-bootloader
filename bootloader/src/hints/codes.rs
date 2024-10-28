@@ -1,13 +1,8 @@
 pub const BOOTLOADER_PREPARE_SIMPLE_BOOTLOADER_OUTPUT_SEGMENT: &str =
     "from starkware.cairo.bootloaders.bootloader.objects import BootloaderInput
-bootloader_input = BootloaderInput.Schema().load(program_input)
-
-ids.simple_bootloader_output_start = segments.add()
-
-# Change output builtin state to a different segment in preparation for calling the
-# simple bootloader.
-output_builtin_state = output_builtin.get_state()
-output_builtin.new_state(base=ids.simple_bootloader_output_start)";
+bootloader_input = BootloaderInput.Schema().load(program_input)";
+pub const BOOTLOADER_RUNNER_OUTPUT_SEGMENT: &str =
+    "ids.simple_bootloader_output_start = segments.add()\n\n# Change output builtin state to a different segment in preparation for calling the\n# simple bootloader.\noutput_builtin_state = output_builtin.get_state()\noutput_builtin.new_state(base=ids.simple_bootloader_output_start)";
 
 pub const BOOTLOADER_PREPARE_SIMPLE_BOOTLOADER_INPUT: &str =
     "simple_bootloader_input = bootloader_input";
@@ -117,6 +112,8 @@ task = simple_bootloader_input.tasks[task_id].load_task()";
 // Appears as nondet %{ 0 %} in the code.
 pub const SIMPLE_BOOTLOADER_ZERO: &str = "memory[ap] = to_felt_or_relocatable(0)";
 
+pub const SIMPLE_BOOTLOADER_USE_POSEIDON: &str =
+    "memory[ap] = to_felt_or_relocatable(1 if task.use_poseidon else 0)";
 pub const EXECUTE_TASK_ALLOCATE_PROGRAM_DATA_SEGMENT: &str =
     "ids.program_data_ptr = program_data_base = segments.add()";
 
@@ -129,11 +126,7 @@ program_address, program_data_size = load_program(
     builtins_offset=ids.ProgramHeader.builtin_list)
 segments.finalize(program_data_base.segment_index, program_data_size)";
 
-pub const EXECUTE_TASK_VALIDATE_HASH: &str = "# Validate hash.
-from starkware.cairo.bootloaders.hash_program import compute_program_hash_chain
-
-assert memory[ids.output_ptr + 1] == compute_program_hash_chain(task.get_program()), \\
-  'Computed hash does not match input.'";
+pub const EXECUTE_TASK_VALIDATE_HASH: &str = "# Validate hash.\nfrom starkware.cairo.bootloaders.hash_program import compute_program_hash_chain\n\nassert memory[ids.output_ptr + 1] == compute_program_hash_chain(\n    program=task.get_program(),\n    use_poseidon=bool(ids.use_poseidon)), 'Computed hash does not match input.'";
 
 pub const EXECUTE_TASK_ASSERT_PROGRAM_ADDRESS: &str = "# Sanity check.
 assert ids.program_address == program_address";

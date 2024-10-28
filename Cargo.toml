@@ -1,21 +1,19 @@
-[package]
-name = "cairo-bootloader"
-version = "0.1.0"
-edition = "2021"
+[workspace]
+members = ["runner","bootloader"]
+resolver = "2"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[dependencies]
-cairo-vm = { git = "https://github.com/lambdaclass/cairo-vm", rev = "05352b1c67859a4d8cd128575c1e68ca7e300341", features = ["extensive_hints"] }
+[workspace.dependencies]
+cairo-vm = { git = "https://github.com/lambdaclass/cairo-vm", features = [
+    "extensive_hints",
+    "mod_builtin",
+] }
 num-traits = "0.2.19"
 serde = { version = "1.0.202", features = ["derive"] }
 serde_json = "1.0.117"
-starknet-crypto = "0.6.2"
+starknet-crypto = "0.7.0"
 starknet-types-core = "0.1.2"
 thiserror = "1.0.61"
 thiserror-no-std = "2.0.2"
-
-[dev-dependencies]
-assert_matches = "1.5.0"
-rstest = "0.19.0"
-
+bincode = "2.0.0-rc.3"
